@@ -16,10 +16,10 @@ const Classes = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-navy mb-2">My Classes</h1>
-          <p className="text-text-secondary">Select a class to view details, students, and performance.</p>
+          <h1 className="text-4xl font-serif text-navy mb-3">Classes</h1>
+          <p className="text-text-secondary text-lg">Manage all classes and track their overall performance metrics.</p>
         </div>
         
         <div className="relative w-full max-w-sm">

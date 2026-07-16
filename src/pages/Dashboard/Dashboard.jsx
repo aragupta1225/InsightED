@@ -42,17 +42,17 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold text-navy mb-2">What needs my attention today?</h1>
-        <p className="text-text-secondary">Overview of critical items requiring your focus.</p>
+      <div className="mb-4">
+        <h1 className="text-4xl font-serif text-navy mb-3">What needs my attention today?</h1>
+        <p className="text-text-secondary text-lg">Overview of critical items requiring your focus.</p>
       </div>
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Students" value={mockDashboardStats.totalStudents} icon={Users} color="pink" />
-        <StatCard title="Classes Monitored" value={mockDashboardStats.classesMonitored} icon={BookOpen} color="green" />
-        <StatCard title="Attendance Today" value={`${mockDashboardStats.attendanceToday}%`} icon={CalendarCheck} color="blue" />
-        <StatCard title="Students Needing Support" value={mockDashboardStats.studentsNeedingSupport} icon={AlertTriangle} color="brown" />
+        <StatCard title="Classes Monitored" value={mockDashboardStats.classesMonitored} icon={BookOpen} color="blue" />
+        <StatCard title="Attendance Today" value={`${mockDashboardStats.attendanceToday}%`} icon={CalendarCheck} color="pink" />
+        <StatCard title="Students Needing Support" value={mockDashboardStats.studentsNeedingSupport} icon={AlertTriangle} color="blue" />
       </div>
 
       {/* Main Content Grid */}
@@ -71,8 +71,8 @@ const Dashboard = () => {
             {attentionStudents.length === 0 ? (
               <EmptyState title="All clear!" description="No students currently require immediate attention." />
             ) : (
-              <div className="flex flex-col gap-3 px-6 pb-6">
-                <div className="grid grid-cols-12 gap-4 px-5 py-2 border-b border-border-subtle text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+              <div className="flex flex-col gap-3 px-6 pb-6 mt-2">
+                <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-[#1E2B59]/5 rounded-xl border border-border-subtle text-xs font-bold text-navy uppercase tracking-wider mb-2">
                   <div className="col-span-4">Student</div>
                   <div className="col-span-2">Class</div>
                   <div className="col-span-6">Reason</div>
@@ -84,7 +84,7 @@ const Dashboard = () => {
                       <span className="font-bold text-navy">{item.name}</span>
                     </div>
                     <div className="col-span-2 font-medium text-navy">{item.class}</div>
-                    <div className="col-span-6 text-sm text-text-secondary truncate">{item.reason}</div>
+                    <div className="col-span-6 text-sm font-medium text-navy truncate">{item.reason}</div>
                   </div>
                 ))}
               </div>
@@ -102,15 +102,15 @@ const Dashboard = () => {
             {attentionClasses.length === 0 ? (
               <EmptyState title="All clear!" description="No classes currently require immediate attention." />
             ) : (
-              <div className="flex flex-col gap-3 px-6 pb-6">
-                <div className="grid grid-cols-12 gap-4 px-5 py-2 border-b border-border-subtle text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+              <div className="flex flex-col gap-3 px-6 pb-6 mt-2">
+                <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-[#1E2B59]/5 rounded-xl border border-border-subtle text-xs font-bold text-navy uppercase tracking-wider mb-2">
                   <div className="col-span-4">Class</div>
                   <div className="col-span-8">Reason</div>
                 </div>
                 {attentionClasses.map((item, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/50 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 transition-all">
                     <div className="col-span-4 font-bold text-navy">{item.class}</div>
-                    <div className="col-span-8 text-sm text-text-secondary truncate">{item.reason}</div>
+                    <div className="col-span-8 text-sm font-medium text-navy truncate">{item.reason}</div>
                   </div>
                 ))}
               </div>
@@ -132,7 +132,7 @@ const Dashboard = () => {
             {/* Progress Bar */}
             <div className="w-full h-2 bg-paper rounded-full overflow-hidden mb-6">
               <div 
-                className="h-full bg-success transition-all duration-500 rounded-full" 
+                className="h-full bg-[#1E2B59] transition-all duration-500 rounded-full" 
                 style={{ width: `${totalTasks === 0 ? 0 : (completedTasksCount / totalTasks) * 100}%` }}
               />
             </div>
@@ -147,12 +147,12 @@ const Dashboard = () => {
                 <div 
                   key={task.id} 
                   className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 ${
-                    task.completed ? 'border-success/20 bg-success-light/40 backdrop-blur' : 'bg-white/50 backdrop-blur-md border-white/60 hover:border-gold/30'
+                    task.completed ? 'border-[#1E2B59]/20 bg-[#1E2B59]/5' : 'bg-white border-white hover:border-[#1E2B59]/30'
                   }`}
                   onClick={() => toggleTask(task.id)}
                 >
                   <div className={`mt-0.5 shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${
-                    task.completed ? 'border-success bg-success' : 'border-text-muted/50 bg-white'
+                    task.completed ? 'border-[#1E2B59] bg-[#1E2B59]' : 'border-text-muted/50 bg-white'
                   }`}>
                     {task.completed && <Check size={16} className="text-white" />}
                   </div>

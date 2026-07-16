@@ -32,7 +32,7 @@ const AttendanceChart = () => {
             <Bar dataKey="uv" radius={[6, 6, 6, 6]}>
               {
                 data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill="var(--color-gold)" />
+                  <Cell key={`cell-${index}`} fill="#1E2B59" />
                 ))
               }
             </Bar>

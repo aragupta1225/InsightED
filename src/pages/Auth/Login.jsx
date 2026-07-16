@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { User, Lock, Eye, ShieldCheck } from 'lucide-react';
 import Button from '../../components/common/Button';
 
 const Login = () => {
@@ -47,61 +48,79 @@ const Login = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-[440px] z-10"
+        className="w-full max-w-[680px] z-10"
       >
-        <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-navy flex items-center justify-center shadow-lg mb-6">
-            <span className="text-gold font-bold text-3xl">I</span>
-          </div>
-          <h1 className="text-4xl font-black tracking-tight text-navy mb-2">InsightED</h1>
-          <h2 className="text-lg font-semibold text-text-secondary mb-3">Educational Intelligence Platform</h2>
-          <p className="text-sm text-text-secondary max-w-[300px] leading-relaxed">
-            Helping teachers identify students who need support and reduce dropout rates.
-          </p>
+        <div className="flex flex-col items-center mb-2 text-center">
+          <img src="/logo.png" alt="InsightED Logo" className="w-[440px] h-auto object-contain mix-blend-multiply" />
         </div>
 
-        <div className="card-glass p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50">
+        <div className="card-glass p-12 shadow-[0_8px_40px_rgba(31,38,135,0.06)] border border-white/60 rounded-[32px] bg-white">
           
           {error && (
-            <div className="mb-6 p-3 rounded-xl bg-danger-light text-danger text-sm text-center font-medium">
+            <div className="mb-6 p-4 rounded-2xl bg-danger-light text-danger text-sm text-center font-medium">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-8">
             <div>
-              <label className="block text-[13px] font-bold text-navy mb-2 ml-1">Username</label>
-              <input 
-                type="text" 
-                className="input-tactile bg-white/60 focus:bg-white"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={isLoading}
-              />
+              <label className="block text-[15px] font-bold text-navy mb-2 ml-1">Username</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-secondary">
+                  <User size={20} strokeWidth={2.5} className="opacity-80" />
+                </div>
+                <input 
+                  type="text" 
+                  className="input-tactile bg-white focus:bg-white w-full rounded-2xl pl-12 py-5 border border-border-subtle shadow-sm text-[15px]"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-[13px] font-bold text-navy mb-2 ml-1">Password</label>
-              <input 
-                type="password" 
-                className="input-tactile bg-white/60 focus:bg-white"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
+              <label className="block text-[15px] font-bold text-navy mb-2 ml-1">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-secondary">
+                  <Lock size={20} strokeWidth={2.5} className="opacity-80" />
+                </div>
+                <input 
+                  type="password" 
+                  className="input-tactile bg-white focus:bg-white w-full rounded-2xl pl-12 pr-12 py-5 border border-border-subtle shadow-sm text-[15px]"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                />
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center text-text-muted cursor-pointer hover:text-navy transition-colors">
+                  <Eye size={20} strokeWidth={2.5} />
+                </div>
+              </div>
             </div>
 
-            <Button type="submit" variant="gold" className="w-full mt-2 h-[52px] text-base font-bold shadow-md hover:shadow-lg transition-all" isLoading={isLoading}>
+            <div className="flex items-center justify-between p-5 bg-white rounded-2xl border border-border-subtle shadow-sm hover:border-[#E89BAA]/30 transition-all cursor-pointer">
+              <div className="flex items-center gap-4">
+                <input 
+                  type="checkbox" 
+                  id="robot" 
+                  className="w-5 h-5 rounded-[6px] border-2 border-text-muted/40 text-[#1E2B59] focus:ring-[#1E2B59] cursor-pointer accent-[#1E2B59]" 
+                />
+                <label htmlFor="robot" className="text-[15px] font-semibold text-navy cursor-pointer">I'm not a robot</label>
+              </div>
+              <ShieldCheck size={26} strokeWidth={2} className="text-[#E89BAA]" />
+            </div>
+
+            <Button type="submit" className="w-full mt-2 h-16 bg-[#1a1a1a] text-white text-[17px] font-bold shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-lg hover:-translate-y-0.5 transition-all rounded-[14px]" isLoading={isLoading}>
               Sign In
             </Button>
           </form>
 
         </div>
 
-        <div className="mt-8 text-center text-xs text-text-muted font-medium uppercase tracking-widest">
-          For authorized teachers only.
+        <div className="mt-8 text-center text-xs text-text-muted/60 font-semibold tracking-[0.1em]">
+          FOR AUTHORIZED TEACHERS ONLY.
         </div>
       </motion.div>
     </div>

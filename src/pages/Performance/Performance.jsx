@@ -9,16 +9,16 @@ import { performanceOverview, mockClasses, subjectPerformance, academicSupportSt
 const Performance = () => {
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold text-navy mb-2">Performance Overview</h1>
-        <p className="text-text-secondary">Track academic progress and identify areas for improvement.</p>
+      <div className="mb-4">
+        <h1 className="text-4xl font-serif text-navy mb-3">Performance Overview</h1>
+        <p className="text-text-secondary text-lg">Track academic progress and identify areas for improvement.</p>
       </div>
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="School Average Score" value={`${performanceOverview.schoolAverage}%`} icon={Target} color="pink" />
-        <StatCard title="Top Performing Class" value={performanceOverview.topClass} icon={Trophy} color="green" />
-        <StatCard title="Classes Needing Attention" value={performanceOverview.classesNeedingAttention} icon={AlertCircle} color="brown" />
+        <StatCard title="Top Performing Class" value={performanceOverview.topClass} icon={Trophy} color="blue" />
+        <StatCard title="Classes Needing Attention" value={performanceOverview.classesNeedingAttention} icon={AlertCircle} color="pink" />
         <StatCard title="Improvement (Last Exam)" value={performanceOverview.improvementSinceLast} icon={TrendingUp} trend="up" color="blue" />
       </div>
 
@@ -34,7 +34,7 @@ const Performance = () => {
                 cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }}
               />
-              <Bar dataKey="avgMarks" name="Average Marks %" fill="#E89BAA" radius={[6, 6, 6, 6]} barSize={40} />
+              <Bar dataKey="avgMarks" name="Average Marks %" fill="#E89BAA" fillOpacity={0.85} radius={[6, 6, 6, 6]} barSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>

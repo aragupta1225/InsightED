@@ -281,9 +281,9 @@ const ClassDetails = () => {
           >
             <ArrowLeft size={20} className="text-navy" />
           </button>
-          <div>
-            <h1 className="text-3xl font-bold text-navy mb-1">{classDetails.name}-{classDetails.section} Details</h1>
-            <p className="text-text-secondary">Comprehensive overview of class performance and roster.</p>
+          <div className="mb-4">
+            <h1 className="text-4xl font-serif text-navy mb-3">Class {classDetails.name} Details</h1>
+            <p className="text-text-secondary text-lg">Comprehensive overview of class performance and roster.</p>
           </div>
         </div>
         <Button variant="outline" className="flex items-center gap-2" onClick={handleGenerateReport} isLoading={isGeneratingReport}>
@@ -350,8 +350,8 @@ const ClassDetails = () => {
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E' }} />
                     <Tooltip cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }} />
                     <Legend iconType="circle" />
-                    <Bar dataKey="attendance" name="Attendance %" fill="#1E2B59" radius={[4, 4, 0, 0]} barSize={60} />
-                    <Bar dataKey="avgScore" name="Avg Score %" fill="#E89BAA" radius={[4, 4, 0, 0]} barSize={60} />
+                    <Bar dataKey="attendance" name="Attendance %" fill="#1E2B59" fillOpacity={0.85} radius={[4, 4, 0, 0]} barSize={60} />
+                    <Bar dataKey="avgScore" name="Avg Score %" fill="#E89BAA" fillOpacity={0.85} radius={[4, 4, 0, 0]} barSize={60} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -701,7 +701,7 @@ const ClassDetails = () => {
               </div>
 
               {/* Right Column: Insights & History */}
-              <div className="flex flex-col gap-6 w-full overflow-hidden">
+              <div className="flex flex-col gap-6 w-full">
                 <ChartContainer title="Weekly Attendance" className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={mockWeeklyAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -709,7 +709,7 @@ const ClassDetails = () => {
                       <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} dy={10} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} domain={[0, 100]} />
                       <Tooltip cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                      <Bar dataKey="present" name="Present %" fill="#E89BAA" radius={[4, 4, 0, 0]} barSize={30} />
+                      <Bar dataKey="present" name="Present %" fill="#E89BAA" fillOpacity={0.85} radius={[4, 4, 0, 0]} barSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>

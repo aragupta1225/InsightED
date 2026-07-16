@@ -9,17 +9,17 @@ import { attendanceOverview, weeklyAttendanceData, lowAttendanceClasses, chronic
 const Attendance = () => {
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold text-navy mb-2">Attendance Overview</h1>
-        <p className="text-text-secondary">Monitor student attendance and identify chronic absentees.</p>
+      <div className="mb-4">
+        <h1 className="text-4xl font-serif text-navy mb-3">Attendance Overview</h1>
+        <p className="text-text-secondary text-lg">Monitor student attendance and identify chronic absentees.</p>
       </div>
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Today's Attendance" value={`${attendanceOverview.todayAttendance}%`} icon={Users} color="pink" />
-        <StatCard title="Best Attendance Class" value={attendanceOverview.bestAttendanceClass} icon={Trophy} color="green" />
-        <StatCard title="Students Absent Today" value={attendanceOverview.absentToday} icon={UserX} color="blue" />
-        <StatCard title="Chronic Absentees" value={attendanceOverview.chronicAbsentees} icon={AlertTriangle} color="brown" />
+        <StatCard title="Average Attendance" value={`${attendanceOverview.averageAttendance}%`} icon={Users} color="pink" />
+        <StatCard title="Best Attendance Class" value={attendanceOverview.bestAttendanceClass} icon={Trophy} color="blue" />
+        <StatCard title="Students Absent Today" value={attendanceOverview.absentToday} icon={UserX} color="pink" />
+        <StatCard title="Chronic Absentees" value={attendanceOverview.chronicAbsentees} icon={AlertTriangle} color="blue" />
       </div>
 
       {/* Main Chart */}
@@ -34,7 +34,7 @@ const Attendance = () => {
                 cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }}
               />
-              <Bar dataKey="attendance" name="Attendance %" fill="#1B2541" radius={[6, 6, 6, 6]} barSize={40} />
+              <Bar dataKey="attendance" name="Attendance %" fill="#1E2B59" fillOpacity={0.85} radius={[6, 6, 6, 6]} barSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>

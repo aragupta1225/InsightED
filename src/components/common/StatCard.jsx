@@ -6,35 +6,36 @@ const StatCard = ({ title, value, change, trend, icon: Icon, color = 'pink' }) =
   const isUp = trend === 'up';
   
   const colorStyles = {
-    pink: 'bg-pastel-pink text-danger',
-    green: 'bg-pastel-green text-success',
-    blue: 'bg-pastel-blue text-info',
-    brown: 'bg-pastel-brown text-warning',
+    pink: {
+      bg: 'bg-[#E89BAA]/10',
+      iconBg: 'bg-[#E89BAA]/15',
+      text: 'text-[#E89BAA]',
+    },
+    blue: {
+      bg: 'bg-[#1E2B59]/10',
+      iconBg: 'bg-[#1E2B59]/15',
+      text: 'text-[#1E2B59]',
+    }
   };
 
   const selectedColor = colorStyles[color] || colorStyles.pink;
 
   return (
-    <Card hover className="flex items-center gap-5 p-5">
+    <Card hover className={`flex items-center gap-6 p-6 ${selectedColor.bg} border-none shadow-[0_8px_30px_rgba(0,0,0,0.02)]`}>
       {Icon && (
-        <div className={`p-4 rounded-[24px] flex-shrink-0 backdrop-blur-md shadow-[inset_0_2px_10px_rgba(255,255,255,0.8)] border border-white/50 ${selectedColor}`}>
-          <Icon size={28} className="opacity-80 mix-blend-multiply" />
+        <div className={`p-4 rounded-3xl flex-shrink-0 ${selectedColor.iconBg} backdrop-blur-sm shadow-[inset_0_2px_10px_rgba(255,255,255,0.4)]`}>
+          <Icon size={32} className={`${selectedColor.text}`} />
         </div>
       )}
       
       <div className="flex flex-col flex-1">
-        <h3 className="text-text-secondary text-sm font-semibold mb-1">{title}</h3>
-        <span className="text-[32px] font-bold text-navy leading-none mb-2">{value}</span>
+        <h3 className="text-text-secondary text-base font-semibold mb-1">{title}</h3>
+        <span className="text-[40px] font-bold text-navy leading-none mb-2">{value}</span>
         
-        {change ? (
-          <div className={`flex items-center text-xs font-semibold ${isUp ? 'text-success' : 'text-danger'}`}>
-            {isUp ? <ArrowUpRight size={14} className="mr-1" /> : <ArrowDownRight size={14} className="mr-1" />}
+        {change && (
+          <div className={`flex items-center text-sm font-semibold ${isUp ? 'text-success' : 'text-danger'}`}>
+            {isUp ? <ArrowUpRight size={16} className="mr-1" /> : <ArrowDownRight size={16} className="mr-1" />}
             <span>{change}</span>
-          </div>
-        ) : (
-          <div className="flex items-center text-xs font-semibold text-text-muted">
-            <span className="h-[2px] w-3 bg-text-muted/50 rounded-full mr-2"></span>
-            <span>No change</span>
           </div>
         )}
       </div>
