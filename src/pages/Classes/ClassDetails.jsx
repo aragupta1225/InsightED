@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, BarChart3, Users, CalendarCheck, BookOpen, Download, Upload, Plus, Save, Edit, ArrowUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import * as XLSX from 'xlsx';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
@@ -95,19 +96,80 @@ const ClassDetails = () => {
     }
   };
 
-  const simulateExcelUpload = () => {
+  const fileInputRef = useRef(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
     setIsTestLoading(true);
-    setTimeout(() => {
-      const uploadedData = initialStudents.map(s => ({
-        id: s.id,
-        rollNo: s.rollNo,
-        name: s.name,
-        marks: Math.floor(Math.random() * 41) + 60 
-      }));
-      setTestMarks(uploadedData);
+    setTestError('');
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+        const parsedMarks = [];
+        let hasError = false;
+        const rollNos = new Set();
+
+        for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          const rollNo = row['Roll No']?.toString().trim();
+          const name = row['Student Name']?.toString().trim();
+          const marks = row['Marks']?.toString().trim();
+
+          if (!rollNo || !name || marks === "") {
+            setTestError(`Row ${i + 2}: Missing required fields (Roll No, Student Name, or Marks).`);
+            hasError = true;
+            break;
+          }
+
+          if (rollNos.has(rollNo)) {
+            setTestError(`Row ${i + 2}: Duplicate Roll No detected (${rollNo}).`);
+            hasError = true;
+            break;
+          }
+          rollNos.add(rollNo);
+
+          const numericMarks = Number(marks);
+          if (isNaN(numericMarks) || numericMarks > testForm.maxMarks || numericMarks < 0) {
+            setTestError(`Row ${i + 2}: Invalid marks for ${name}. Must be between 0 and ${testForm.maxMarks}.`);
+            hasError = true;
+            break;
+          }
+
+          // Map back to student ID if exists, otherwise generate one
+          const matchedStudent = initialStudents.find(s => s.rollNo === rollNo);
+          parsedMarks.push({
+            id: matchedStudent ? matchedStudent.id : `STU_TEMP_${i}`,
+            rollNo,
+            name,
+            marks: numericMarks
+          });
+        }
+
+        if (!hasError) {
+          setTestMarks(parsedMarks);
+          setTestState('preview');
+        }
+      } catch (err) {
+        setTestError("Failed to parse the file. Please ensure it is a valid Excel/CSV file with the correct format.");
+      } finally {
+        setIsTestLoading(false);
+        if (fileInputRef.current) fileInputRef.current.value = ""; // reset input
+      }
+    };
+    reader.onerror = () => {
+      setTestError("Error reading the file.");
       setIsTestLoading(false);
-      setTestState('preview');
-    }, 1200);
+    };
+    reader.readAsBinaryString(file);
   };
 
   const saveMarks = () => {
@@ -356,15 +418,24 @@ const ClassDetails = () => {
             )}
 
             {testState === 'entry' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card 
-                  className={`flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gold transition-colors ${isTestLoading ? 'bg-gold-light/20 cursor-wait' : 'hover:bg-gold-light/20 cursor-pointer'}`}
-                  onClick={isTestLoading ? null : simulateExcelUpload}
-                >
-                  <Upload size={48} className={`text-gold mb-4 ${isTestLoading ? 'animate-bounce' : ''}`} />
-                  <h3 className="text-lg font-bold text-navy mb-2">{isTestLoading ? 'Processing...' : 'Upload Excel Sheet'}</h3>
-                  <p className="text-sm text-text-secondary">Format: Roll No, Student Name, Marks</p>
-                </Card>
+              <div className="flex flex-col gap-6">
+                {testError && <div className="p-3 bg-danger-light text-danger rounded-xl text-sm">{testError}</div>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card 
+                    className={`flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gold transition-colors ${isTestLoading ? 'bg-gold-light/20 cursor-wait' : 'hover:bg-gold-light/20 cursor-pointer'}`}
+                    onClick={() => !isTestLoading && fileInputRef.current && fileInputRef.current.click()}
+                  >
+                    <input 
+                      type="file" 
+                      accept=".xlsx, .xls, .csv" 
+                      className="hidden" 
+                      ref={fileInputRef} 
+                      onChange={handleFileUpload} 
+                    />
+                    <Upload size={48} className={`text-gold mb-4 ${isTestLoading ? 'animate-bounce' : ''}`} />
+                    <h3 className="text-lg font-bold text-navy mb-2">{isTestLoading ? 'Processing...' : 'Upload Excel Sheet'}</h3>
+                    <p className="text-sm text-text-secondary">Format: Roll No, Student Name, Marks</p>
+                  </Card>
                 
                 <Card 
                   className={`flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-navy transition-colors ${isTestLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-navy/5 cursor-pointer'}`}
@@ -378,6 +449,7 @@ const ClassDetails = () => {
                   <h3 className="text-lg font-bold text-navy mb-2">Manual Entry</h3>
                   <p className="text-sm text-text-secondary">Enter marks directly into the system</p>
                 </Card>
+                </div>
               </div>
             )}
 
@@ -387,9 +459,20 @@ const ClassDetails = () => {
                   <Card className="bg-success-light/30 border-success/20">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
                       <h3 className="text-lg font-bold text-navy">{testForm.name} - {testForm.subject} Insights</h3>
-                      <Button variant="outline" className="px-4 py-2 text-sm flex items-center justify-center gap-2" onClick={() => setTestState('preview')}>
-                        <Edit size={16} /> Edit Marks
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button variant="outline" className="px-4 py-2 text-sm flex items-center justify-center gap-2" onClick={() => setTestState('preview')}>
+                          <Edit size={16} /> Edit Marks
+                        </Button>
+                        <Button variant="primary" className="px-4 py-2 text-sm flex items-center justify-center gap-2" onClick={() => {
+                          setTestForm({ name: '', subject: '', maxMarks: 100, date: '' });
+                          setTestMarks([]);
+                          setTestInsights(null);
+                          setTestError('');
+                          setTestState('setup');
+                        }}>
+                          <Plus size={16} /> Create Another Test
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
@@ -419,9 +502,14 @@ const ClassDetails = () => {
                       {testState === 'preview' && <p className="text-sm text-text-secondary">Review before saving.</p>}
                     </div>
                     {testState === 'preview' && (
-                      <Button variant="primary" className="flex items-center justify-center gap-2" onClick={saveMarks} isLoading={isTestLoading}>
-                        <Save size={18} /> Save Marks
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <Button variant="ghost" onClick={() => setTestState('entry')} disabled={isTestLoading}>
+                          Cancel
+                        </Button>
+                        <Button variant="primary" className="flex items-center justify-center gap-2" onClick={saveMarks} isLoading={isTestLoading}>
+                          <Save size={18} /> Save Marks
+                        </Button>
+                      </div>
                     )}
                   </div>
                   <div className="overflow-x-auto w-full">
@@ -538,16 +626,13 @@ const ClassDetails = () => {
                             <td className="px-6 py-3 font-semibold text-navy">{student.rollNo}</td>
                             <td className="px-6 py-3 font-medium text-navy">{student.name}</td>
                             <td className="px-6 py-3 text-right">
-                              <label className="relative inline-flex items-center cursor-pointer ml-auto">
-                                <input 
-                                  type="checkbox" 
-                                  className="sr-only peer"
-                                  checked={attendanceData[student.id] || false}
-                                  onChange={() => toggleStudentAttendance(student.id)}
-                                  disabled={isSavingAttendance}
-                                />
-                                <div className="w-11 h-6 bg-border-subtle peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-                              </label>
+                              <input 
+                                type="checkbox" 
+                                className="w-5 h-5 accent-navy cursor-pointer ml-auto block"
+                                checked={attendanceData[student.id] || false}
+                                onChange={() => toggleStudentAttendance(student.id)}
+                                disabled={isSavingAttendance}
+                              />
                             </td>
                           </tr>
                         ))}

@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { mockTestHistory, subjectPerformance } from '../data/mockData';
 
 export const generateClassReport = (classDetails, students) => {
@@ -42,7 +42,7 @@ export const generateClassReport = (classDetails, students) => {
   
   const subjectData = subjectPerformance.map(sub => [sub.subject, `${sub.avgMarks}%`]);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: 90,
     head: [['Subject', 'Average Marks (%)']],
     body: subjectData,
@@ -138,7 +138,7 @@ export const generateStudentReport = (student, remarks) => {
   
   const testData = mockTestHistory.map(test => [test.testName, test.date, `${test.marks}%`]);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: 100,
     head: [['Test Name', 'Date', 'Marks (%)']],
     body: testData,
@@ -156,10 +156,10 @@ export const generateStudentReport = (student, remarks) => {
   let currentY = finalY + 8;
   
   if (!remarks || remarks.length === 0) {
-    doc.setFontStyle('italic');
+    doc.setFont('helvetica', 'italic');
     doc.setTextColor(150);
     doc.text('No remarks provided.', 20, currentY);
-    doc.setFontStyle('normal');
+    doc.setFont('helvetica', 'normal');
   } else {
     doc.setTextColor(15, 23, 42);
     remarks.forEach(remark => {

@@ -13,12 +13,18 @@ const ReportModal = ({ isOpen, onClose, title, children, reportType, classDetail
     
     // Slight timeout to show the spinner and then generate/download PDF
     setTimeout(() => {
-      if (reportType === 'class') {
-        generateClassReport(classDetails, students);
-      } else if (reportType === 'student') {
-        generateStudentReport(student, remarks);
+      try {
+        if (reportType === 'class') {
+          generateClassReport(classDetails, students);
+        } else if (reportType === 'student') {
+          generateStudentReport(student, remarks);
+        }
+      } catch (err) {
+        console.error("Error generating PDF:", err);
+        alert("Failed to generate PDF. Check console for details.");
+      } finally {
+        setIsDownloading(false);
       }
-      setIsDownloading(false);
     }, 500);
   };
 
