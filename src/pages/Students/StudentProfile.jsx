@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Plus, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Download, Plus, FileText, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
@@ -32,6 +32,10 @@ const StudentProfile = () => {
         setIsAddingRemark(false);
       }, 800);
     }
+  };
+
+  const removeRemark = (idxToRemove) => {
+    setRemarks(remarks.filter((_, idx) => idx !== idxToRemove));
   };
 
   const handleGenerateReport = () => {
@@ -97,8 +101,16 @@ const StudentProfile = () => {
                 <p className="text-sm text-text-secondary italic">No remarks added yet.</p>
               )}
               {remarks.map((remark, idx) => (
-                <div key={idx} className="p-4 bg-paper-light rounded-xl border border-border-subtle">
-                  <p className="text-sm text-navy">{remark}</p>
+                <div key={idx} className="group flex items-start justify-between gap-3 p-4 bg-paper-light rounded-xl border border-border-subtle transition-all hover:shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:-translate-y-0.5">
+                  <p className="text-sm text-navy flex-1">{remark}</p>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeRemark(idx); }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg shrink-0"
+                    title="Remove remark"
+                  >
+                    <X size={16} strokeWidth={2.5} />
+                  </button>
                 </div>
               ))}
               
