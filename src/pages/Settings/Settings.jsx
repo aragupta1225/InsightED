@@ -1,11 +1,52 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { teacherData, mockClasses } from '../../data/mockData';
 
 const Settings = () => {
-  // Format assigned classes for display
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
   const assignedClassesStr = mockClasses.map(c => `${c.name}-${c.section}`).join(', ');
+
+  const handlePasswordChange = (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError('Please fill out all password fields.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters long.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Simulate network request
+    setTimeout(() => {
+      setIsLoading(false);
+      setSuccess('Password updated successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      setTimeout(() => setSuccess(''), 3000);
+    }, 1200);
+  };
 
   return (
     <div className="flex flex-col gap-8 max-w-4xl">
@@ -41,23 +82,57 @@ const Settings = () => {
         {/* Security Section */}
         <div>
           <h3 className="text-lg font-semibold text-navy border-b border-border-subtle pb-4 mb-6">Security</h3>
-          <div className="flex flex-col gap-4 max-w-md">
+          <form onSubmit={handlePasswordChange} className="flex flex-col gap-4 max-w-md">
+            
+            {error && (
+              <div className="p-3 rounded-xl bg-danger-light text-danger text-sm">
+                {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="p-3 rounded-xl bg-success-light text-success text-sm font-bold">
+                {success}
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Current Password</label>
-              <input type="password" placeholder="••••••••" className="input-tactile" />
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                className="input-tactile" 
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                disabled={isLoading}
+              />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">New Password</label>
-              <input type="password" placeholder="••••••••" className="input-tactile" />
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                className="input-tactile" 
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                disabled={isLoading}
+              />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Confirm New Password</label>
-              <input type="password" placeholder="••••••••" className="input-tactile" />
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                className="input-tactile" 
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                disabled={isLoading}
+              />
             </div>
             <div className="pt-2">
-              <Button variant="primary">Change Password</Button>
+              <Button type="submit" variant="primary" isLoading={isLoading}>Change Password</Button>
             </div>
-          </div>
+          </form>
         </div>
 
       </Card>

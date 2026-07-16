@@ -17,15 +17,29 @@ const StudentProfile = () => {
   const [remarks, setRemarks] = useState(student.remarks || []);
   const [isAddingRemark, setIsAddingRemark] = useState(false);
   const [newRemarkText, setNewRemarkText] = useState('');
+  const [isSavingRemark, setIsSavingRemark] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const addRemark = (e) => {
     e.preventDefault();
     if (newRemarkText.trim()) {
-      setRemarks([...remarks, newRemarkText.trim()]);
-      setNewRemarkText('');
-      setIsAddingRemark(false);
+      setIsSavingRemark(true);
+      setTimeout(() => {
+        setRemarks([...remarks, newRemarkText.trim()]);
+        setNewRemarkText('');
+        setIsSavingRemark(false);
+        setIsAddingRemark(false);
+      }, 800);
     }
+  };
+
+  const handleGenerateReport = () => {
+    setIsGeneratingReport(true);
+    setTimeout(() => {
+      setIsGeneratingReport(false);
+      setIsReportOpen(true);
+    }, 800);
   };
 
   const generatedDate = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -36,14 +50,14 @@ const StudentProfile = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate(`/classes/${student.classId}`)}
+            onClick={() => navigate(`/classes/${student.classId}?tab=students`)}
             className="p-2 bg-paper-light border border-border-subtle rounded-xl hover:bg-white hover:border-gold transition-all"
           >
             <ArrowLeft size={20} className="text-navy" />
           </button>
           <h1 className="text-3xl font-bold text-navy">Student Profile</h1>
         </div>
-        <Button variant="outline" className="flex items-center gap-2" onClick={() => setIsReportOpen(true)}>
+        <Button variant="outline" className="flex items-center gap-2" onClick={handleGenerateReport} isLoading={isGeneratingReport}>
           <Download size={18} /> Download Student Report PDF
         </Button>
       </div>
@@ -96,10 +110,11 @@ const StudentProfile = () => {
                     className="input-tactile min-h-[80px] text-sm resize-none"
                     value={newRemarkText}
                     onChange={(e) => setNewRemarkText(e.target.value)}
+                    disabled={isSavingRemark}
                   />
                   <div className="flex justify-end gap-2 mt-2">
-                    <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => setIsAddingRemark(false)}>Cancel</Button>
-                    <Button type="submit" variant="primary" className="px-4 py-1.5 text-xs">Save Remark</Button>
+                    <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => setIsAddingRemark(false)} disabled={isSavingRemark}>Cancel</Button>
+                    <Button type="submit" variant="primary" className="px-4 py-1.5 text-xs" isLoading={isSavingRemark}>Save Remark</Button>
                   </div>
                 </form>
               )}
@@ -108,10 +123,10 @@ const StudentProfile = () => {
         </div>
 
         {/* Right Column: Performance & History */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
           <Card>
             <h3 className="text-lg font-semibold text-navy mb-6">Performance Summary</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-paper-light">
                 <div className="p-2 bg-success-light text-success rounded-lg shrink-0">
                   <CheckCircle size={24} />
@@ -149,8 +164,8 @@ const StudentProfile = () => {
                 Test History
               </h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse min-w-[400px]">
                 <thead>
                   <tr className="border-b border-border-subtle bg-paper/50">
                     <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Test Name</th>
@@ -161,9 +176,9 @@ const StudentProfile = () => {
                 <tbody>
                   {mockTestHistory.map((test, idx) => (
                     <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                      <td className="px-6 py-4 font-semibold text-navy">{test.testName}</td>
-                      <td className="px-6 py-4 text-sm text-text-secondary">{test.date}</td>
-                      <td className="px-6 py-4 font-bold text-navy text-right">{test.marks}%</td>
+                      <td className="px-6 py-4 font-semibold text-navy whitespace-nowrap">{test.testName}</td>
+                      <td className="px-6 py-4 text-sm text-text-secondary whitespace-nowrap">{test.date}</td>
+                      <td className="px-6 py-4 font-bold text-navy text-right whitespace-nowrap">{test.marks}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -174,7 +189,14 @@ const StudentProfile = () => {
       </div>
 
       {/* STUDENT REPORT MODAL */}
-      <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} title="Student Academic Report">
+      <ReportModal 
+        isOpen={isReportOpen} 
+        onClose={() => setIsReportOpen(false)} 
+        title="Student Academic Report"
+        student={student}
+        remarks={remarks}
+        reportType="student"
+      >
         <div className="flex flex-col gap-8 text-navy font-sans">
           
           <div className="text-center border-b-2 border-navy pb-6">
@@ -205,7 +227,7 @@ const StudentProfile = () => {
                 <tr className="bg-paper-light">
                   <th className="p-3 border-b border-border-subtle">Test Name</th>
                   <th className="p-3 border-b border-border-subtle">Date</th>
-                  <th className="p-3 border-b border-border-subtle">Marks (%)</th>
+                  <th className="p-3 border-b border-border-subtle text-right">Marks (%)</th>
                 </tr>
               </thead>
               <tbody>
@@ -213,7 +235,7 @@ const StudentProfile = () => {
                   <tr key={idx} className="border-b border-border-subtle">
                     <td className="p-3">{test.testName}</td>
                     <td className="p-3">{test.date}</td>
-                    <td className="p-3">{test.marks}%</td>
+                    <td className="p-3 text-right">{test.marks}%</td>
                   </tr>
                 ))}
               </tbody>

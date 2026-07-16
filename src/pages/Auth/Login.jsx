@@ -1,23 +1,38 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Button from '../../components/common/Button';
 
 const Login = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Simulate first-time login check
-    if (username === 'ananya.maths' && password === 'temp123') {
-      navigate('/create-password');
-    } else if (username === 'ananya.maths' && password === 'teacher123') {
-      navigate('/dashboard');
-    } else {
-      setError('Invalid username or password.');
+    setError('');
+    
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both username and password.');
+      return;
     }
+
+    setIsLoading(true);
+
+    // Simulate network request
+    setTimeout(() => {
+      setIsLoading(false);
+      // Simulate first-time login check
+      if (username === 'ananya.maths' && password === 'temp123') {
+        navigate('/create-password');
+      } else if (username === 'ananya.maths' && password === 'teacher123') {
+        navigate('/dashboard');
+      } else {
+        setError('Invalid username or password.');
+      }
+    }, 1000);
   };
 
   return (
@@ -55,7 +70,6 @@ const Login = () => {
                 placeholder="Enter your username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                required
               />
             </div>
 
@@ -67,13 +81,12 @@ const Login = () => {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
               />
             </div>
 
-            <button type="submit" className="btn-gold w-full mt-4 h-[52px]">
+            <Button type="submit" variant="gold" className="w-full mt-4 h-[52px]" isLoading={isLoading}>
               Login
-            </button>
+            </Button>
           </form>
 
           <div className="mt-6 text-center text-[13px] text-text-secondary font-medium">

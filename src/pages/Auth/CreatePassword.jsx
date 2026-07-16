@@ -1,15 +1,24 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Button from '../../components/common/Button';
 
 const CreatePassword = () => {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
+
+    if (!password || !confirmPassword) {
+      setError('Please fill out both password fields.');
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -19,8 +28,18 @@ const CreatePassword = () => {
       return;
     }
     
-    // Simulate successful password creation and login
-    navigate('/dashboard');
+    setIsLoading(true);
+
+    // Simulate network request
+    setTimeout(() => {
+      setIsLoading(false);
+      setIsSuccess(true);
+      
+      // Delay navigation to show success message
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
+    }, 1200);
   };
 
   return (
@@ -43,6 +62,12 @@ const CreatePassword = () => {
             </div>
           )}
 
+          {isSuccess && (
+            <div className="mb-4 p-3 rounded-xl bg-success-light text-success text-sm text-center font-bold">
+              Password successfully set! Redirecting...
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-[13px] font-bold text-navy mb-2 ml-1">New Password</label>
@@ -52,7 +77,7 @@ const CreatePassword = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                disabled={isLoading || isSuccess}
               />
             </div>
 
@@ -64,13 +89,13 @@ const CreatePassword = () => {
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                disabled={isLoading || isSuccess}
               />
             </div>
 
-            <button type="submit" className="btn-gold w-full mt-4 h-[52px]">
+            <Button type="submit" variant="gold" className="w-full mt-4 h-[52px]" isLoading={isLoading} disabled={isSuccess}>
               Set Password & Login
-            </button>
+            </Button>
           </form>
         </div>
       </motion.div>

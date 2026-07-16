@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, BarChart3, Users, CalendarCheck, BookOpen, Download, Upload, Plus, Save, Edit } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, ChevronRight, BarChart3, Users, CalendarCheck, BookOpen, Download, Upload, Plus, Save, Edit, ArrowUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -13,55 +13,150 @@ import { mockClasses, mockStudents, subjectPerformance } from '../../data/mockDa
 const ClassDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const activeTab = searchParams.get('tab') || 'overview';
+  const handleTabChange = (tabId) => {
+    setSearchParams({ tab: tabId });
+  };
+
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   
   const classDetails = mockClasses.find(c => c.id === id) || mockClasses[0];
-  const students = mockStudents.filter(s => s.classId === id);
+  const initialStudents = mockStudents.filter(s => s.classId === id);
 
-  // Simple mock data for the bar chart
+  // Sorting State for Students Tab
+  const [sortConfig, setSortConfig] = useState({ key: 'rollNo', direction: 'asc' });
+
+  const sortedStudents = useMemo(() => {
+    let sortableStudents = [...initialStudents];
+    if (sortConfig !== null) {
+      sortableStudents.sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+        
+        if (sortConfig.key === 'rollNo' || sortConfig.key === 'attendance' || sortConfig.key === 'marks') {
+          aVal = Number(aVal);
+          bVal = Number(bVal);
+        }
+
+        if (aVal < bVal) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aVal > bVal) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableStudents;
+  }, [initialStudents, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   const chartData = [
     { name: classDetails.name, attendance: classDetails.avgAttendance, avgScore: classDetails.avgMarks }
   ];
 
   const generatedDate = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  const handleGenerateReport = () => {
+    setIsGeneratingReport(true);
+    setTimeout(() => {
+      setIsGeneratingReport(false);
+      setIsReportOpen(true);
+    }, 800);
+  };
+
   // --- TEST MANAGEMENT STATE ---
-  const [testState, setTestState] = useState('setup'); // setup, entry, preview, saved
+  const [testState, setTestState] = useState('setup');
   const [testForm, setTestForm] = useState({ name: '', subject: '', maxMarks: 100, date: '' });
-  const [testMarks, setTestMarks] = useState([]); // Array of { id, rollNo, name, marks }
+  const [testMarks, setTestMarks] = useState([]); 
   const [testInsights, setTestInsights] = useState(null);
+  const [isTestLoading, setIsTestLoading] = useState(false);
+  const [testError, setTestError] = useState('');
 
   const handleTestSetupSubmit = (e) => {
     e.preventDefault();
-    if(testForm.name && testForm.subject && testForm.date) {
+    setTestError('');
+    if (testForm.maxMarks <= 0) {
+      setTestError('Maximum marks must be greater than 0.');
+      return;
+    }
+    if (testForm.name && testForm.subject && testForm.date) {
       setTestState('entry');
     }
   };
 
   const simulateExcelUpload = () => {
-    // Simulate parsing an excel file that maps to our students
-    const uploadedData = students.map(s => ({
-      id: s.id,
-      rollNo: s.rollNo,
-      name: s.name,
-      marks: Math.floor(Math.random() * 41) + 60 // Random marks between 60-100 for simulation
-    }));
-    setTestMarks(uploadedData);
-    setTestState('preview');
+    setIsTestLoading(true);
+    setTimeout(() => {
+      const uploadedData = initialStudents.map(s => ({
+        id: s.id,
+        rollNo: s.rollNo,
+        name: s.name,
+        marks: Math.floor(Math.random() * 41) + 60 
+      }));
+      setTestMarks(uploadedData);
+      setIsTestLoading(false);
+      setTestState('preview');
+    }, 1200);
   };
 
   const saveMarks = () => {
-    // Calculate insights
-    const marksArr = testMarks.map(t => Number(t.marks));
-    const avg = (marksArr.reduce((a,b) => a+b, 0) / marksArr.length).toFixed(1);
-    const max = Math.max(...marksArr);
-    const min = Math.min(...marksArr);
-    const below40 = testMarks.filter(t => (Number(t.marks) / testForm.maxMarks) * 100 < 40).length;
+    setIsTestLoading(true);
+    setTimeout(() => {
+      const marksArr = testMarks.map(t => Number(t.marks) || 0);
+      const avg = marksArr.length > 0 ? (marksArr.reduce((a,b) => a+b, 0) / marksArr.length).toFixed(1) : 0;
+      const max = marksArr.length > 0 ? Math.max(...marksArr) : 0;
+      const min = marksArr.length > 0 ? Math.min(...marksArr) : 0;
+      const below40 = testMarks.filter(t => (Number(t.marks || 0) / testForm.maxMarks) * 100 < 40).length;
 
-    setTestInsights({ avg, max, min, below40 });
-    setTestState('saved');
+      setTestInsights({ avg, max, min, below40 });
+      setIsTestLoading(false);
+      setTestState('saved');
+    }, 1000);
   };
+
+  // --- ATTENDANCE MANAGEMENT STATE ---
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attendanceData, setAttendanceData] = useState(
+    initialStudents.reduce((acc, s) => ({ ...acc, [s.id]: true }), {})
+  );
+  const [isSavingAttendance, setIsSavingAttendance] = useState(false);
+  const [attendanceSaved, setAttendanceSaved] = useState(false);
+
+  const toggleStudentAttendance = (studentId) => {
+    setAttendanceData(prev => ({ ...prev, [studentId]: !prev[studentId] }));
+  };
+
+  const saveAttendance = () => {
+    setIsSavingAttendance(true);
+    setTimeout(() => {
+      setIsSavingAttendance(false);
+      setAttendanceSaved(true);
+      setTimeout(() => setAttendanceSaved(false), 3000);
+    }, 1000);
+  };
+
+  const mockWeeklyAttendance = [
+    { day: 'Mon', present: 95 },
+    { day: 'Tue', present: 92 },
+    { day: 'Wed', present: 88 },
+    { day: 'Thu', present: 94 },
+    { day: 'Fri', present: 89 },
+  ];
+
+  const studentsNeedingAttendanceSupport = initialStudents
+    .filter(s => s.attendance < 75)
+    .sort((a, b) => a.attendance - b.attendance);
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -69,6 +164,18 @@ const ClassDetails = () => {
     { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
     { id: 'tests', label: 'Tests', icon: BookOpen },
   ];
+
+  const SortableHeader = ({ label, sortKey, align = 'left' }) => (
+    <th 
+      className={`px-6 py-4 font-semibold text-text-secondary text-sm cursor-pointer hover:text-navy transition-colors select-none ${align === 'right' ? 'text-right' : 'text-left'}`}
+      onClick={() => requestSort(sortKey)}
+    >
+      <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : 'justify-start'}`}>
+        {label}
+        <ArrowUpDown size={14} className={sortConfig?.key === sortKey ? 'text-navy' : 'text-text-muted/50'} />
+      </div>
+    </th>
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -86,21 +193,21 @@ const ClassDetails = () => {
             <p className="text-text-secondary">Comprehensive overview of class performance and roster.</p>
           </div>
         </div>
-        <Button variant="outline" className="flex items-center gap-2" onClick={() => setIsReportOpen(true)}>
+        <Button variant="outline" className="flex items-center gap-2" onClick={handleGenerateReport} isLoading={isGeneratingReport}>
           <Download size={18} /> Download Class Report PDF
         </Button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 border-b border-border-subtle">
+      <div className="flex gap-2 overflow-x-auto pb-2 border-b border-border-subtle scrollbar-hide">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-semibold transition-all ${
+              onClick={() => handleTabChange(tab.id)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-semibold transition-all whitespace-nowrap ${
                 isActive 
                   ? 'bg-paper-light border-x border-t border-border-subtle text-navy shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]' 
                   : 'text-text-secondary hover:text-navy hover:bg-paper-light/50'
@@ -162,20 +269,20 @@ const ClassDetails = () => {
         {/* STUDENTS TAB */}
         {activeTab === 'students' && (
           <Card noPadding>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="border-b border-border-subtle bg-paper/50">
-                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm w-24">Roll No</th>
-                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Name</th>
-                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Attendance %</th>
-                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Avg Score</th>
-                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Status</th>
+                    <SortableHeader label="Roll No" sortKey="rollNo" />
+                    <SortableHeader label="Name" sortKey="name" />
+                    <SortableHeader label="Attendance %" sortKey="attendance" />
+                    <SortableHeader label="Avg Score" sortKey="marks" />
+                    <SortableHeader label="Status" sortKey="status" />
                     <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">View</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {students.map((student) => (
+                  {sortedStudents.map((student) => (
                     <tr 
                       key={student.id} 
                       className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors cursor-pointer group"
@@ -202,7 +309,7 @@ const ClassDetails = () => {
                       </td>
                     </tr>
                   ))}
-                  {students.length === 0 && (
+                  {sortedStudents.length === 0 && (
                     <tr>
                       <td colSpan="6" className="p-12 text-center text-text-secondary">
                         No students found in this class.
@@ -215,14 +322,15 @@ const ClassDetails = () => {
           </Card>
         )}
 
-        {/* TESTS TAB (TEST MANAGEMENT) */}
+        {/* TESTS TAB */}
         {activeTab === 'tests' && (
           <div className="flex flex-col gap-6">
             
-            {/* Step 1: Setup Form */}
             {testState === 'setup' && (
               <Card>
                 <h3 className="text-xl font-bold text-navy mb-4">Create New Test</h3>
+                {testError && <div className="mb-4 p-3 bg-danger-light text-danger rounded-xl text-sm">{testError}</div>}
+                
                 <form onSubmit={handleTestSetupSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-text-secondary">Test Name</label>
@@ -247,18 +355,25 @@ const ClassDetails = () => {
               </Card>
             )}
 
-            {/* Step 2: Data Entry Upload */}
             {testState === 'entry' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gold hover:bg-gold-light/20 cursor-pointer transition-colors" onClick={simulateExcelUpload}>
-                  <Upload size={48} className="text-gold mb-4" />
-                  <h3 className="text-lg font-bold text-navy mb-2">Upload Excel Sheet</h3>
+                <Card 
+                  className={`flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gold transition-colors ${isTestLoading ? 'bg-gold-light/20 cursor-wait' : 'hover:bg-gold-light/20 cursor-pointer'}`}
+                  onClick={isTestLoading ? null : simulateExcelUpload}
+                >
+                  <Upload size={48} className={`text-gold mb-4 ${isTestLoading ? 'animate-bounce' : ''}`} />
+                  <h3 className="text-lg font-bold text-navy mb-2">{isTestLoading ? 'Processing...' : 'Upload Excel Sheet'}</h3>
                   <p className="text-sm text-text-secondary">Format: Roll No, Student Name, Marks</p>
                 </Card>
-                <Card className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-navy hover:bg-navy/5 cursor-pointer transition-colors" onClick={() => {
-                  setTestMarks(students.map(s => ({ id: s.id, rollNo: s.rollNo, name: s.name, marks: '' })));
-                  setTestState('preview');
-                }}>
+                
+                <Card 
+                  className={`flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-navy transition-colors ${isTestLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-navy/5 cursor-pointer'}`}
+                  onClick={() => {
+                    if(isTestLoading) return;
+                    setTestMarks(initialStudents.map(s => ({ id: s.id, rollNo: s.rollNo, name: s.name, marks: '' })));
+                    setTestState('preview');
+                  }}
+                >
                   <Plus size={48} className="text-navy mb-4" />
                   <h3 className="text-lg font-bold text-navy mb-2">Manual Entry</h3>
                   <p className="text-sm text-text-secondary">Enter marks directly into the system</p>
@@ -266,16 +381,13 @@ const ClassDetails = () => {
               </div>
             )}
 
-            {/* Step 3 & 4: Preview and Saved View */}
             {(testState === 'preview' || testState === 'saved') && (
               <div className="flex flex-col gap-6">
-                
-                {/* Insights Header when Saved */}
                 {testState === 'saved' && testInsights && (
                   <Card className="bg-success-light/30 border-success/20">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
                       <h3 className="text-lg font-bold text-navy">{testForm.name} - {testForm.subject} Insights</h3>
-                      <Button variant="outline" className="px-4 py-2 text-sm flex items-center gap-2" onClick={() => setTestState('preview')}>
+                      <Button variant="outline" className="px-4 py-2 text-sm flex items-center justify-center gap-2" onClick={() => setTestState('preview')}>
                         <Edit size={16} /> Edit Marks
                       </Button>
                     </div>
@@ -301,19 +413,19 @@ const ClassDetails = () => {
                 )}
 
                 <Card noPadding>
-                  <div className="p-4 border-b border-border-subtle bg-paper-light flex items-center justify-between">
+                  <div className="p-4 border-b border-border-subtle bg-paper-light flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <h3 className="font-bold text-navy">{testState === 'preview' ? 'Preview Data' : 'Final Marks'}</h3>
                       {testState === 'preview' && <p className="text-sm text-text-secondary">Review before saving.</p>}
                     </div>
                     {testState === 'preview' && (
-                      <Button variant="primary" className="flex items-center gap-2" onClick={saveMarks}>
+                      <Button variant="primary" className="flex items-center justify-center gap-2" onClick={saveMarks} isLoading={isTestLoading}>
                         <Save size={18} /> Save Marks
                       </Button>
                     )}
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                  <div className="overflow-x-auto w-full">
+                    <table className="w-full text-left border-collapse min-w-[500px]">
                       <thead>
                         <tr className="border-b border-border-subtle bg-paper/50">
                           <th className="px-6 py-4 font-semibold text-text-secondary text-sm w-24">Roll No</th>
@@ -330,8 +442,9 @@ const ClassDetails = () => {
                               {testState === 'preview' ? (
                                 <input 
                                   type="number" 
-                                  className="input-tactile py-2 px-3 text-right max-w-[120px]" 
+                                  className="input-tactile py-2 px-3 text-right max-w-[120px] ml-auto block" 
                                   value={tm.marks}
+                                  disabled={isTestLoading}
                                   onChange={(e) => {
                                     const newMarks = [...testMarks];
                                     newMarks[idx].marks = e.target.value;
@@ -353,21 +466,149 @@ const ClassDetails = () => {
           </div>
         )}
 
-        {/* ATTENDANCE TAB Placeholder */}
+        {/* ATTENDANCE MANAGEMENT TAB */}
         {activeTab === 'attendance' && (
-          <Card className="flex flex-col items-center justify-center p-20 text-center">
-            <div className="w-16 h-16 bg-paper rounded-full flex items-center justify-center mb-4 text-gold">
-              <CalendarCheck size={32} />
+          <div className="flex flex-col gap-6">
+            
+            {/* Top Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="flex flex-col justify-center">
+                <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Today's Attd.</p>
+                <p className="text-2xl font-bold text-navy">
+                  {Object.values(attendanceData).filter(Boolean).length} / {initialStudents.length}
+                </p>
+              </Card>
+              <Card className="flex flex-col justify-center">
+                <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Avg Attendance</p>
+                <p className="text-2xl font-bold text-navy">{classDetails.avgAttendance}%</p>
+              </Card>
+              <Card className="flex flex-col justify-center border-danger-light">
+                <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Below 75%</p>
+                <p className="text-2xl font-bold text-danger">{studentsNeedingAttendanceSupport.length}</p>
+              </Card>
+              <Card className="flex flex-col justify-center border-warning-light">
+                <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Consecutive Absentees</p>
+                <p className="text-2xl font-bold text-warning">1</p>
+              </Card>
             </div>
-            <h3 className="text-xl font-bold text-navy mb-2">Detailed Attendance View</h3>
-            <p className="text-text-secondary">This module is under development.</p>
-          </Card>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              
+              {/* Left Column: Marking Table */}
+              <div className="xl:col-span-2 flex flex-col gap-6 w-full overflow-hidden">
+                <Card noPadding className="flex flex-col h-full">
+                  <div className="p-4 border-b border-border-subtle bg-paper-light flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <h3 className="font-bold text-navy">Mark Attendance</h3>
+                      <input 
+                        type="date" 
+                        className="input-tactile py-1 px-3 text-sm w-auto"
+                        value={attendanceDate}
+                        onChange={(e) => setAttendanceDate(e.target.value)}
+                        disabled={isSavingAttendance}
+                      />
+                    </div>
+                    <Button 
+                      variant="primary" 
+                      onClick={saveAttendance} 
+                      isLoading={isSavingAttendance}
+                    >
+                      Save Attendance
+                    </Button>
+                  </div>
+                  
+                  {attendanceSaved && (
+                    <div className="m-4 p-3 bg-success-light text-success rounded-xl text-sm font-bold flex items-center justify-center gap-2 animate-in fade-in">
+                      <CheckCircle size={18} /> Attendance saved successfully!
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto w-full flex-1">
+                    <table className="w-full text-left border-collapse min-w-[400px]">
+                      <thead>
+                        <tr className="border-b border-border-subtle bg-paper/50">
+                          <th className="px-6 py-4 font-semibold text-text-secondary text-sm w-24">Roll No</th>
+                          <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Student Name</th>
+                          <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">Present</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {initialStudents.map(student => (
+                          <tr key={student.id} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
+                            <td className="px-6 py-3 font-semibold text-navy">{student.rollNo}</td>
+                            <td className="px-6 py-3 font-medium text-navy">{student.name}</td>
+                            <td className="px-6 py-3 text-right">
+                              <label className="relative inline-flex items-center cursor-pointer ml-auto">
+                                <input 
+                                  type="checkbox" 
+                                  className="sr-only peer"
+                                  checked={attendanceData[student.id] || false}
+                                  onChange={() => toggleStudentAttendance(student.id)}
+                                  disabled={isSavingAttendance}
+                                />
+                                <div className="w-11 h-6 bg-border-subtle peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
+                              </label>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Right Column: Insights & History */}
+              <div className="flex flex-col gap-6 w-full overflow-hidden">
+                <ChartContainer title="Weekly Attendance" className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={mockWeeklyAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(27, 37, 65, 0.08)" />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} domain={[0, 100]} />
+                      <Tooltip cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                      <Bar dataKey="present" name="Present %" fill="#C89B3C" radius={[4, 4, 0, 0]} barSize={30} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+
+                <Card noPadding>
+                  <div className="p-4 border-b border-border-subtle bg-paper-light">
+                    <h3 className="font-semibold text-navy">Students &lt; 75% Attendance</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <tbody>
+                        {studentsNeedingAttendanceSupport.length === 0 ? (
+                          <tr><td className="p-6 text-center text-text-secondary text-sm">No students below 75%</td></tr>
+                        ) : (
+                          studentsNeedingAttendanceSupport.map(s => (
+                            <tr key={s.id} className="border-b border-border-subtle last:border-none">
+                              <td className="px-4 py-3 font-medium text-navy text-sm">{s.name}</td>
+                              <td className="px-4 py-3 font-bold text-danger text-sm text-right">{s.attendance}%</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+
+            </div>
+          </div>
         )}
 
       </div>
 
       {/* CLASS REPORT MODAL */}
-      <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} title="Class Performance Report">
+      <ReportModal 
+        isOpen={isReportOpen} 
+        onClose={() => setIsReportOpen(false)} 
+        title="Class Performance Report"
+        reportType="class"
+        classDetails={classDetails}
+        students={initialStudents}
+      >
         <div className="flex flex-col gap-8 text-navy font-sans">
           
           <div className="text-center border-b-2 border-navy pb-6">
@@ -413,13 +654,13 @@ const ClassDetails = () => {
               <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2 text-success">Top Performers</h3>
               <ul className="list-disc pl-5 space-y-2">
                 <li>{classDetails.topPerformer}</li>
-                <li>{students.length > 1 ? students[1].name : 'N/A'}</li>
+                <li>{initialStudents.length > 1 ? initialStudents[1].name : 'N/A'}</li>
               </ul>
             </div>
             <div>
               <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2 text-danger">Students Needing Support</h3>
               <ul className="list-disc pl-5 space-y-2">
-                {students.filter(s => s.status === 'Needs Support').map((s, idx) => (
+                {initialStudents.filter(s => s.status === 'Needs Support').map((s, idx) => (
                   <li key={idx}>{s.name} (Avg: {s.marks}%)</li>
                 ))}
               </ul>
