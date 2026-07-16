@@ -1,14 +1,13 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, UserSquare, Brain, PieChart, FileText, Settings, LogOut } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, BarChart3, CalendarCheck, Settings, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/students', icon: Users, label: 'Students' },
-  { path: '/insights', icon: Brain, label: 'Learning Insights' },
-  { path: '/analytics', icon: PieChart, label: 'Analytics' },
-  { path: '/reports', icon: FileText, label: 'Reports' },
+  { path: '/classes', icon: Users, label: 'Classes' },
+  { path: '/performance', icon: BarChart3, label: 'Performance' },
+  { path: '/attendance', icon: CalendarCheck, label: 'Attendance' },
 ];
 
 const bottomItems = [
@@ -17,6 +16,12 @@ const bottomItems = [
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // In a real app, clear auth tokens here
+    navigate('/login');
+  };
 
   const NavItem = ({ item }) => {
     const isActive = location.pathname.startsWith(item.path);
@@ -46,7 +51,7 @@ const Sidebar = () => {
     <div className="fixed left-0 top-0 h-screen w-[260px] bg-surface backdrop-blur-md border-r border-border-subtle flex flex-col z-20">
       <div className="p-8 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-navy flex items-center justify-center shadow-md">
-          <Brain className="text-gold" size={24} />
+          <span className="text-gold font-bold text-xl">I</span>
         </div>
         <span className="text-xl font-bold text-navy tracking-tight">InsightED</span>
       </div>
@@ -58,7 +63,10 @@ const Sidebar = () => {
 
       <div className="p-4 flex flex-col gap-2 border-t border-border-subtle">
         {bottomItems.map(item => <NavItem key={item.path} item={item} />)}
-        <button className="flex items-center gap-3 px-4 py-3 rounded-2xl text-text-secondary hover:text-danger hover:bg-danger-light transition-all duration-300 w-full">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-text-secondary hover:text-danger hover:bg-danger-light transition-all duration-300 w-full"
+        >
           <LogOut size={22} />
           <span>Logout</span>
         </button>

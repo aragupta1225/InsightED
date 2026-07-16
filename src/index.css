@@ -88,3 +88,28 @@
            shadow-[inset_0_2px_4px_rgba(27,37,65,0.04)] placeholder-text-muted;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-container, .print-container * {
+    visibility: visible;
+  }
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .card-glass {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}

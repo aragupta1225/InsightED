@@ -1,177 +1,248 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, MapPin, Download, AlertTriangle } from 'lucide-react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ArrowLeft, Download, Plus, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import Badge from '../../components/common/Badge';
-import ChartContainer from '../../components/common/ChartContainer';
-import { mockStudentDetails } from '../../data/mockData';
+import ReportModal from '../../components/common/ReportModal';
+import { mockStudents, mockTestHistory } from '../../data/mockData';
 
 const StudentProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Use mock details or fallback to first student if not found in detailed mock
-  const student = mockStudentDetails[id] || mockStudentDetails['1'];
+  const student = mockStudents.find(s => s.id === id) || mockStudents[0];
 
-  // Mock data for radar chart based on subjects
-  const radarData = student.subjects.map(s => ({
-    subject: s.name,
-    score: s.score,
-    fullMark: 100,
-  }));
+  const [remarks, setRemarks] = useState(student.remarks || []);
+  const [isAddingRemark, setIsAddingRemark] = useState(false);
+  const [newRemarkText, setNewRemarkText] = useState('');
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
-  // Mock trend data
-  const trendData = [
-    { month: 'Sep', gpa: student.gpa - 0.2 },
-    { month: 'Oct', gpa: student.gpa - 0.1 },
-    { month: 'Nov', gpa: student.gpa + 0.1 },
-    { month: 'Dec', gpa: student.gpa },
-    { month: 'Jan', gpa: student.gpa + 0.2 },
-    { month: 'Feb', gpa: student.gpa },
-  ];
+  const addRemark = (e) => {
+    e.preventDefault();
+    if (newRemarkText.trim()) {
+      setRemarks([...remarks, newRemarkText.trim()]);
+      setNewRemarkText('');
+      setIsAddingRemark(false);
+    }
+  };
+
+  const generatedDate = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
     <div className="flex flex-col gap-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate('/students')}
+            onClick={() => navigate(`/classes/${student.classId}`)}
             className="p-2 bg-paper-light border border-border-subtle rounded-xl hover:bg-white hover:border-gold transition-all"
           >
             <ArrowLeft size={20} className="text-navy" />
           </button>
-          <h1 className="text-2xl font-bold text-navy">Student Profile</h1>
+          <h1 className="text-3xl font-bold text-navy">Student Profile</h1>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">Schedule Meeting</Button>
-          <Button variant="primary">Generate Report</Button>
-        </div>
+        <Button variant="outline" className="flex items-center gap-2" onClick={() => setIsReportOpen(true)}>
+          <Download size={18} /> Download Student Report PDF
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Personal Info */}
+        {/* Left Column: Student Info & Remarks */}
         <div className="flex flex-col gap-6">
           <Card className="flex flex-col items-center text-center">
             <Avatar name={student.name} size="xl" className="mb-4" />
-            <h2 className="text-xl font-bold text-navy">{student.name}</h2>
-            <p className="text-text-secondary mb-4">Grade: {student.grade} • ID: STU-{student.id.padStart(4, '0')}</p>
+            <h2 className="text-xl font-bold text-navy mb-1">{student.name}</h2>
+            <p className="text-text-secondary font-medium mb-4">Roll No: {student.rollNo}</p>
             
-            <div className="flex gap-2 mb-6">
-              <Badge variant={student.risk === 'high' ? 'danger' : student.risk === 'medium' ? 'warning' : 'success'}>
-                {student.risk.charAt(0).toUpperCase() + student.risk.slice(1)} Risk
-              </Badge>
-              <Badge variant="info">GPA: {student.gpa.toFixed(1)}</Badge>
-            </div>
-
-            <div className="w-full h-px bg-border-subtle mb-6"></div>
-
-            <div className="w-full flex flex-col gap-4 text-left">
-              <div className="flex items-center gap-3 text-text-secondary">
-                <Mail size={18} />
-                <span className="text-sm">{student.email}</span>
+            <div className="w-full flex justify-around mb-2">
+              <div className="text-center">
+                <p className="text-sm text-text-muted uppercase tracking-wider mb-1">Marks</p>
+                <p className="text-xl font-bold text-navy">{student.marks}%</p>
               </div>
-              <div className="flex items-center gap-3 text-text-secondary">
-                <Phone size={18} />
-                <span className="text-sm">{student.phone}</span>
-              </div>
-              <div className="flex items-center gap-3 text-text-secondary">
-                <Users size={18} />
-                <span className="text-sm">{student.parents}</span>
-              </div>
-              <div className="flex items-center gap-3 text-text-secondary">
-                <MapPin size={18} />
-                <span className="text-sm">{student.address}</span>
+              <div className="text-center">
+                <p className="text-sm text-text-muted uppercase tracking-wider mb-1">Attendance</p>
+                <p className="text-xl font-bold text-navy">{student.attendance}%</p>
               </div>
             </div>
           </Card>
 
           <Card>
-            <h3 className="text-lg font-semibold text-navy mb-4">Behavioral Notes</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-navy">Teacher Remarks</h3>
+              {!isAddingRemark && (
+                <Button variant="ghost" className="p-2 text-gold hover:text-gold hover:bg-gold-light/30" onClick={() => setIsAddingRemark(true)}>
+                  <Plus size={18} />
+                </Button>
+              )}
+            </div>
+
             <div className="flex flex-col gap-4">
-              {student.behaviorNotes.map((note, idx) => (
-                <div key={idx} className="p-4 bg-paper-light rounded-2xl border border-border-subtle">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold text-text-muted">{note.date}</span>
-                  </div>
-                  <p className="text-sm text-navy">{note.note}</p>
+              {remarks.length === 0 && !isAddingRemark && (
+                <p className="text-sm text-text-secondary italic">No remarks added yet.</p>
+              )}
+              {remarks.map((remark, idx) => (
+                <div key={idx} className="p-4 bg-paper-light rounded-xl border border-border-subtle">
+                  <p className="text-sm text-navy">{remark}</p>
                 </div>
               ))}
-              <Button variant="outline" className="w-full mt-2">+ Add Note</Button>
+              
+              {isAddingRemark && (
+                <form onSubmit={addRemark} className="flex flex-col gap-3 p-4 bg-paper-light rounded-xl border border-gold border-dashed">
+                  <textarea 
+                    autoFocus
+                    placeholder="Type your remark here..." 
+                    className="input-tactile min-h-[80px] text-sm resize-none"
+                    value={newRemarkText}
+                    onChange={(e) => setNewRemarkText(e.target.value)}
+                  />
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => setIsAddingRemark(false)}>Cancel</Button>
+                    <Button type="submit" variant="primary" className="px-4 py-1.5 text-xs">Save Remark</Button>
+                  </div>
+                </form>
+              )}
             </div>
           </Card>
         </div>
 
-        {/* Right Column: Analytics */}
+        {/* Right Column: Performance & History */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ChartContainer title="Subject Proficiency">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                  <PolarGrid stroke="rgba(27, 37, 65, 0.08)" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#585A72', fontSize: 12 }} />
-                  <Radar name="Student" dataKey="score" stroke="#C89B3C" fill="#C89B3C" fillOpacity={0.4} />
-                  <Tooltip />
-                </RadarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-
-            <ChartContainer title="GPA Trend (Last 6 Months)">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(27, 37, 65, 0.08)" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} dy={10} />
-                  <YAxis domain={[0, 4.0]} axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} />
-                  <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }} />
-                  <Line type="monotone" dataKey="gpa" stroke="#1B2541" strokeWidth={3} dot={{ r: 4, fill: '#1B2541' }} activeDot={{ r: 6, fill: '#C89B3C' }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </div>
-
           <Card>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-navy">Intervention History</h3>
-            </div>
-            {student.risk === 'high' && (
-              <div className="flex items-start gap-3 p-4 bg-danger-light rounded-2xl mb-6">
-                <AlertTriangle className="text-danger shrink-0 mt-0.5" size={20} />
+            <h3 className="text-lg font-semibold text-navy mb-6">Performance Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-paper-light">
+                <div className="p-2 bg-success-light text-success rounded-lg shrink-0">
+                  <CheckCircle size={24} />
+                </div>
                 <div>
-                  <h4 className="font-semibold text-danger">Immediate Action Required</h4>
-                  <p className="text-sm text-danger/80 mt-1">Student has missed multiple assignments and attendance is critically low.</p>
+                  <h4 className="font-semibold text-navy mb-1">Overall Status</h4>
+                  <p className="text-sm text-text-secondary">
+                    {student.status === 'Excellent' ? 'Student is performing exceptionally well.' : 
+                     student.status === 'Good' ? 'Student is making steady progress.' : 
+                     'Student requires additional support and attention.'}
+                  </p>
                 </div>
               </div>
-            )}
-            
-            <div className="relative border-l-2 border-border-subtle ml-3 pl-6 pb-2">
-              <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-paper border-2 border-gold"></div>
-              <p className="text-sm font-semibold text-navy mb-1">Parent-Teacher Conference Scheduled</p>
-              <p className="text-sm text-text-secondary mb-2">Discussing recent drop in math performance.</p>
-              <span className="text-xs text-text-muted">Upcoming: Next Tuesday</span>
+              
+              <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-paper-light">
+                <div className={`p-2 rounded-lg shrink-0 ${student.attendance >= 75 ? 'bg-info-light text-info' : 'bg-danger-light text-danger'}`}>
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-navy mb-1">Attendance Flag</h4>
+                  <p className="text-sm text-text-secondary">
+                    {student.attendance >= 90 ? 'Attendance is excellent.' : 
+                     student.attendance >= 75 ? 'Attendance is acceptable.' : 
+                     'Critical! Attendance is below 75%.'}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="relative border-l-2 border-border-subtle ml-3 pl-6 py-6">
-              <div className="absolute -left-[9px] top-6 w-4 h-4 rounded-full bg-paper border-2 border-navy"></div>
-              <p className="text-sm font-semibold text-navy mb-1">Counselor Meeting Completed</p>
-              <p className="text-sm text-text-secondary mb-2">Student reported feeling overwhelmed with assignments.</p>
-              <span className="text-xs text-text-muted">July 10, 2026</span>
+          </Card>
+
+          <Card noPadding>
+            <div className="p-6 border-b border-border-subtle bg-paper-light">
+              <h3 className="font-semibold text-navy flex items-center gap-2">
+                <FileText size={20} className="text-navy-muted" /> 
+                Test History
+              </h3>
             </div>
-            <div className="relative ml-3 pl-6 pt-6">
-              <div className="absolute -left-[9px] top-6 w-4 h-4 rounded-full bg-paper border-2 border-border-subtle"></div>
-              <p className="text-sm font-semibold text-navy mb-1">Tutoring Assigned</p>
-              <p className="text-sm text-text-secondary mb-2">Weekly sessions for Science starting.</p>
-              <span className="text-xs text-text-muted">June 15, 2026</span>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border-subtle bg-paper/50">
+                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Test Name</th>
+                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Date</th>
+                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">Marks (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockTestHistory.map((test, idx) => (
+                    <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
+                      <td className="px-6 py-4 font-semibold text-navy">{test.testName}</td>
+                      <td className="px-6 py-4 text-sm text-text-secondary">{test.date}</td>
+                      <td className="px-6 py-4 font-bold text-navy text-right">{test.marks}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Card>
         </div>
       </div>
+
+      {/* STUDENT REPORT MODAL */}
+      <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} title="Student Academic Report">
+        <div className="flex flex-col gap-8 text-navy font-sans">
+          
+          <div className="text-center border-b-2 border-navy pb-6">
+            <h1 className="text-3xl font-bold uppercase tracking-widest mb-2">InsightED</h1>
+            <p className="text-lg text-text-secondary">Official Student Academic Report</p>
+            <p className="text-sm mt-2 text-text-muted">Generated on {generatedDate}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8">
+            <div className="bg-paper-light p-6 rounded-xl border border-border-subtle">
+              <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2">Student Information</h3>
+              <p><strong>Name:</strong> {student.name}</p>
+              <p className="mt-2"><strong>Roll No:</strong> {student.rollNo}</p>
+              <p className="mt-2"><strong>Class:</strong> {student.classId}</p>
+            </div>
+            <div className="bg-paper-light p-6 rounded-xl border border-border-subtle">
+              <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2">Performance Summary</h3>
+              <p><strong>Overall Average:</strong> {student.marks}%</p>
+              <p className="mt-2"><strong>Attendance:</strong> {student.attendance}%</p>
+              <p className="mt-2"><strong>Status:</strong> {student.status}</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2">Test Scores</h3>
+            <table className="w-full text-left border border-border-subtle">
+              <thead>
+                <tr className="bg-paper-light">
+                  <th className="p-3 border-b border-border-subtle">Test Name</th>
+                  <th className="p-3 border-b border-border-subtle">Date</th>
+                  <th className="p-3 border-b border-border-subtle">Marks (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockTestHistory.map((test, idx) => (
+                  <tr key={idx} className="border-b border-border-subtle">
+                    <td className="p-3">{test.testName}</td>
+                    <td className="p-3">{test.date}</td>
+                    <td className="p-3">{test.marks}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2">Teacher Remarks</h3>
+            {remarks.length === 0 ? (
+              <p className="italic text-text-secondary">No remarks provided.</p>
+            ) : (
+              <ul className="list-disc pl-5 space-y-2">
+                {remarks.map((remark, idx) => (
+                  <li key={idx} className="text-navy">{remark}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-border-subtle flex justify-between items-center text-sm text-text-secondary">
+            <p>This is a computer-generated document and does not require a signature.</p>
+            <p>Powered by InsightED Platform</p>
+          </div>
+
+        </div>
+      </ReportModal>
+
     </div>
   );
 };
-
-// Helper import we missed at top
-import { Users } from 'lucide-react';
 
 export default StudentProfile;

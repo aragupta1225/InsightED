@@ -1,56 +1,65 @@
 import React from 'react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import { teacherData, mockClasses } from '../../data/mockData';
 
 const Settings = () => {
+  // Format assigned classes for display
+  const assignedClassesStr = mockClasses.map(c => `${c.name}-${c.section}`).join(', ');
+
   return (
     <div className="flex flex-col gap-8 max-w-4xl">
       <div>
         <h1 className="text-3xl font-bold text-navy mb-2">Settings</h1>
-        <p className="text-text-secondary">Manage your preferences and system configuration.</p>
+        <p className="text-text-secondary">Manage your profile and security settings.</p>
       </div>
 
       <Card className="flex flex-col gap-8">
+        {/* Profile Section */}
         <div>
-          <h3 className="text-lg font-semibold text-navy border-b border-border-subtle pb-4 mb-6">Profile Settings</h3>
+          <h3 className="text-lg font-semibold text-navy border-b border-border-subtle pb-4 mb-6">Profile</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Full Name</label>
-              <input type="text" className="input-tactile" defaultValue="Dr. Sarah Jenkins" />
+              <input type="text" className="input-tactile bg-paper-light cursor-not-allowed text-navy/70" defaultValue={teacherData.name} disabled />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-text-secondary">Email Address</label>
-              <input type="email" className="input-tactile" defaultValue="s.jenkins@insighted.edu" />
+              <label className="text-sm font-medium text-text-secondary">Email</label>
+              <input type="email" className="input-tactile bg-paper-light cursor-not-allowed text-navy/70" defaultValue={teacherData.email} disabled />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-text-secondary">Assigned Classes</label>
+              <input type="text" className="input-tactile bg-paper-light cursor-not-allowed text-navy/70" defaultValue={assignedClassesStr} disabled />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Role</label>
-              <input type="text" className="input-tactile" defaultValue="Principal" disabled />
+              <input type="text" className="input-tactile bg-paper-light cursor-not-allowed text-navy/70" defaultValue="Teacher" disabled />
             </div>
           </div>
         </div>
 
+        {/* Security Section */}
         <div>
-          <h3 className="text-lg font-semibold text-navy border-b border-border-subtle pb-4 mb-6">Notifications</h3>
-          <div className="flex flex-col gap-4">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" defaultChecked className="w-5 h-5 accent-gold cursor-pointer" />
-              <span className="text-navy">Email alerts for High Risk students</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" defaultChecked className="w-5 h-5 accent-gold cursor-pointer" />
-              <span className="text-navy">Weekly summary digest</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" className="w-5 h-5 accent-gold cursor-pointer" />
-              <span className="text-navy">SMS alerts for critical system updates</span>
-            </label>
+          <h3 className="text-lg font-semibold text-navy border-b border-border-subtle pb-4 mb-6">Security</h3>
+          <div className="flex flex-col gap-4 max-w-md">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-text-secondary">Current Password</label>
+              <input type="password" placeholder="••••••••" className="input-tactile" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-text-secondary">New Password</label>
+              <input type="password" placeholder="••••••••" className="input-tactile" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-text-secondary">Confirm New Password</label>
+              <input type="password" placeholder="••••••••" className="input-tactile" />
+            </div>
+            <div className="pt-2">
+              <Button variant="primary">Change Password</Button>
+            </div>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-border-subtle flex justify-end gap-4">
-          <Button variant="outline">Cancel</Button>
-          <Button variant="primary">Save Changes</Button>
-        </div>
       </Card>
     </div>
   );
