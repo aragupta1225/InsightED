@@ -1,23 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-serif: "DM Serif Display", Georgia, serif;
 
   /* Custom Color Palette */
-  --color-paper: #FAF7F2;
-  --color-paper-light: #FDFBFC;
-  --color-surface: rgba(255, 255, 255, 0.85);
+  --color-paper: #FAF8F5;
+  --color-paper-light: #FFFFFF;
+  --color-surface: rgba(255, 255, 255, 0.6);
 
-  --color-navy: #1B2541;
-  --color-navy-muted: #2A365B;
+  /* Navy redefined as dark slate for contrast */
+  --color-navy: #1a1a1a;
+  --color-navy-muted: #2d2d2d;
+  
   --color-gold: #C89B3C;
   --color-gold-light: #FCEFD5;
+  
+  /* Sidebar active pill pink */
+  --color-rose: #E89BAA;
+
+  /* Pastel accents for metric cards (ultra soft) */
+  --color-pastel-pink: #fae8e8;
+  --color-pastel-green: #eef5eb;
+  --color-pastel-blue: #e8eef6;
+  --color-pastel-brown: #f6efe8;
 
   --color-text-primary: #1A1A2E;
   --color-text-secondary: #585A72;
   --color-text-muted: #8A8B9E;
 
-  --color-border-subtle: rgba(27, 37, 65, 0.08);
+  --color-border-subtle: rgba(31, 38, 135, 0.05);
 
   --color-success: #1E8666;
   --color-success-light: #DDF3EC;
@@ -29,32 +42,43 @@
   --color-info-light: #E4EFFB;
 
   /* Large soft radii */
-  --radius-card: 24px;
+  --radius-card: 32px;
   --radius-pill: 9999px;
 
   /* Elegant softer shadows for a premium feel */
-  --shadow-float: 0 12px 36px -12px rgba(27, 37, 65, 0.04),
-                  0 4px 12px -4px rgba(27, 37, 65, 0.02);
-  --shadow-lifted: 0 24px 48px -12px rgba(27, 37, 65, 0.08),
-                   0 8px 24px -6px rgba(27, 37, 65, 0.04);
-  --shadow-glow: 0 0 20px rgba(200, 155, 60, 0.15);
+  --shadow-float: 0 12px 40px rgba(31, 38, 135, 0.05);
+  --shadow-lifted: 0 24px 60px rgba(31, 38, 135, 0.08);
+  --shadow-glow: 0 0 30px rgba(200, 155, 60, 0.12);
 }
 
 @layer base {
+  html, body, #root {
+    background-color: #F8F5EF;
+    /* Soft grid pattern */
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
   body {
-    background-color: var(--color-paper);
-    /* Subtle noise/texture simulating high-quality paper canvas */
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.01em;
   }
+  
+  h1, h2, h3, .font-serif {
+    font-family: var(--font-serif);
+    font-weight: 400;
+  }
 }
 
 @layer components {
   .card-glass {
-    @apply bg-surface backdrop-blur-md rounded-[24px] border border-border-subtle shadow-float transition-all duration-300;
+    @apply bg-white/70 backdrop-blur-2xl rounded-[32px] border border-white shadow-float transition-all duration-300;
   }
 
   .card-hover {

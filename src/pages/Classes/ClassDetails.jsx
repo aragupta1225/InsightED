@@ -350,8 +350,8 @@ const ClassDetails = () => {
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E' }} />
                     <Tooltip cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }} />
                     <Legend iconType="circle" />
-                    <Bar dataKey="attendance" name="Attendance %" fill="#1B2541" radius={[4, 4, 0, 0]} barSize={60} />
-                    <Bar dataKey="avgScore" name="Avg Score %" fill="#C89B3C" radius={[4, 4, 0, 0]} barSize={60} />
+                    <Bar dataKey="attendance" name="Attendance %" fill="#1E2B59" radius={[4, 4, 0, 0]} barSize={60} />
+                    <Bar dataKey="avgScore" name="Avg Score %" fill="#E89BAA" radius={[4, 4, 0, 0]} barSize={60} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -709,7 +709,7 @@ const ClassDetails = () => {
                       <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} dy={10} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} domain={[0, 100]} />
                       <Tooltip cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                      <Bar dataKey="present" name="Present %" fill="#C89B3C" radius={[4, 4, 0, 0]} barSize={30} />
+                      <Bar dataKey="present" name="Present %" fill="#E89BAA" radius={[4, 4, 0, 0]} barSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>

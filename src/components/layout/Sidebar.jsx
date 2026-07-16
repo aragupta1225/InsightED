@@ -23,10 +23,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const handleLogout = () => {
     setIsLoggingOut(true);
     setTimeout(() => {
-      // Simulate clearing auth and logging out
+      // Clear auth state
+      localStorage.removeItem('isLoggedIn');
       setIsLoggingOut(false);
       navigate('/login');
-    }, 1000);
+    }, 600);
   };
 
   const NavItem = ({ item }) => {
@@ -38,48 +39,52 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         to={item.path}
         onClick={() => setIsOpen(false)} // close sidebar on mobile after click
         className={`relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 outline-none ${
-          isActive ? 'text-navy font-semibold' : 'text-text-secondary hover:text-navy hover:bg-paper-light'
+          isActive ? 'text-white font-semibold' : 'text-text-muted hover:text-white hover:bg-white/5'
         }`}
       >
         {isActive && (
           <motion.div
             layoutId="activeTab"
-            className="absolute inset-0 bg-gold-light rounded-2xl -z-10"
+            className="absolute inset-0 bg-rose rounded-2xl -z-10"
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           />
         )}
-        <Icon size={22} className={isActive ? 'text-gold' : ''} />
+        <Icon size={22} className={isActive ? 'text-white' : ''} />
         <span>{item.label}</span>
       </NavLink>
     );
   };
 
   return (
-    <div className={`fixed left-0 top-0 h-screen w-[260px] bg-surface backdrop-blur-md border-r border-border-subtle flex flex-col z-40 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-      <div className="p-8 flex items-center justify-between gap-3">
+    <div className={`fixed left-0 top-0 h-screen w-[260px] bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] flex flex-col z-40 transition-transform duration-300 overflow-hidden ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      
+      {/* Subtle texture/glow for premium depth */}
+      <div className="absolute top-[-10%] left-[-20%] w-[150%] h-[40%] bg-white/5 rounded-full blur-[80px] pointer-events-none" />
+
+      <div className="p-8 flex items-center justify-between gap-3 relative z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-navy flex items-center justify-center shadow-md">
-            <span className="text-gold font-bold text-xl">I</span>
+          <div className="w-10 h-10 rounded-xl bg-white/90 backdrop-blur flex items-center justify-center shadow-lg border border-white/20">
+            <span className="text-navy font-bold text-xl font-serif">I</span>
           </div>
-          <span className="text-xl font-bold text-navy tracking-tight">InsightED</span>
+          <span className="text-xl font-bold text-white tracking-tight font-serif">InsightED</span>
         </div>
-        <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 text-text-secondary hover:text-navy hover:bg-paper-light rounded-xl">
+        <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 text-text-muted hover:text-white hover:bg-white/10 rounded-xl transition-all">
           <X size={24} />
         </button>
       </div>
 
       <div className="flex-1 px-4 py-2 flex flex-col gap-2 overflow-y-auto">
-        <div className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-4">Menu</div>
+        <div className="text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2 px-4">Menu</div>
         {menuItems.map(item => <NavItem key={item.path} item={item} />)}
       </div>
 
-      <div className="p-4 flex flex-col gap-2 border-t border-border-subtle">
+      <div className="p-4 flex flex-col gap-2 border-t border-white/10">
         {bottomItems.map(item => <NavItem key={item.path} item={item} />)}
         <Button 
           variant="ghost"
           onClick={handleLogout}
           isLoading={isLoggingOut}
-          className="flex items-center justify-start gap-3 px-4 py-3 rounded-2xl text-text-secondary hover:text-danger hover:bg-danger-light transition-all duration-300 w-full"
+          className="flex items-center justify-start gap-3 px-4 py-3 rounded-2xl text-text-muted hover:text-danger hover:bg-white/5 transition-all duration-300 w-full"
         >
           <LogOut size={22} />
           <span>Logout</span>

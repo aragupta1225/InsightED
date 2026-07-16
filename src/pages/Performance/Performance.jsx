@@ -16,10 +16,10 @@ const Performance = () => {
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="School Average Score" value={`${performanceOverview.schoolAverage}%`} icon={Target} />
-        <StatCard title="Top Performing Class" value={performanceOverview.topClass} icon={Trophy} />
-        <StatCard title="Classes Needing Attention" value={performanceOverview.classesNeedingAttention} icon={AlertCircle} />
-        <StatCard title="Improvement (Last Exam)" value={performanceOverview.improvementSinceLast} icon={TrendingUp} trend="up" />
+        <StatCard title="School Average Score" value={`${performanceOverview.schoolAverage}%`} icon={Target} color="pink" />
+        <StatCard title="Top Performing Class" value={performanceOverview.topClass} icon={Trophy} color="green" />
+        <StatCard title="Classes Needing Attention" value={performanceOverview.classesNeedingAttention} icon={AlertCircle} color="brown" />
+        <StatCard title="Improvement (Last Exam)" value={performanceOverview.improvementSinceLast} icon={TrendingUp} trend="up" color="blue" />
       </div>
 
       {/* Main Chart */}
@@ -34,7 +34,7 @@ const Performance = () => {
                 cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }}
               />
-              <Bar dataKey="avgMarks" name="Average Marks %" fill="#C89B3C" radius={[6, 6, 6, 6]} barSize={40} />
+              <Bar dataKey="avgMarks" name="Average Marks %" fill="#E89BAA" radius={[6, 6, 6, 6]} barSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>

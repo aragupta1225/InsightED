@@ -16,10 +16,10 @@ const Attendance = () => {
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Today's Attendance" value={`${attendanceOverview.todayAttendance}%`} icon={Users} />
-        <StatCard title="Students Absent Today" value={attendanceOverview.absentToday} icon={UserX} />
-        <StatCard title="Chronic Absentees" value={attendanceOverview.chronicAbsentees} icon={AlertTriangle} />
-        <StatCard title="Best Attendance Class" value={attendanceOverview.bestAttendanceClass} icon={Trophy} />
+        <StatCard title="Today's Attendance" value={`${attendanceOverview.todayAttendance}%`} icon={Users} color="pink" />
+        <StatCard title="Best Attendance Class" value={attendanceOverview.bestAttendanceClass} icon={Trophy} color="green" />
+        <StatCard title="Students Absent Today" value={attendanceOverview.absentToday} icon={UserX} color="blue" />
+        <StatCard title="Chronic Absentees" value={attendanceOverview.chronicAbsentees} icon={AlertTriangle} color="brown" />
       </div>
 
       {/* Main Chart */}

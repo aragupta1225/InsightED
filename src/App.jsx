@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Login from './pages/Auth/Login';
-import CreatePassword from './pages/Auth/CreatePassword';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Classes from './pages/Classes/Classes';
 import ClassDetails from './pages/Classes/ClassDetails';
@@ -10,15 +9,23 @@ import Attendance from './pages/Attendance/Attendance';
 import Settings from './pages/Settings/Settings';
 import StudentProfile from './pages/Students/StudentProfile';
 
+const ProtectedRoute = ({ children }) => {
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/create-password" element={<CreatePassword />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         
-        <Route element={<DashboardLayout />}>
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/classes" element={<Classes />} />
           <Route path="/classes/:id" element={<ClassDetails />} />

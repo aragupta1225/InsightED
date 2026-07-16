@@ -49,10 +49,10 @@ const Dashboard = () => {
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Students" value={mockDashboardStats.totalStudents} icon={Users} />
-        <StatCard title="Attendance Today" value={`${mockDashboardStats.attendanceToday}%`} icon={CalendarCheck} />
-        <StatCard title="Students Needing Support" value={mockDashboardStats.studentsNeedingSupport} icon={AlertTriangle} />
-        <StatCard title="Classes Monitored" value={mockDashboardStats.classesMonitored} icon={BookOpen} />
+        <StatCard title="Total Students" value={mockDashboardStats.totalStudents} icon={Users} color="pink" />
+        <StatCard title="Classes Monitored" value={mockDashboardStats.classesMonitored} icon={BookOpen} color="green" />
+        <StatCard title="Attendance Today" value={`${mockDashboardStats.attendanceToday}%`} icon={CalendarCheck} color="blue" />
+        <StatCard title="Students Needing Support" value={mockDashboardStats.studentsNeedingSupport} icon={AlertTriangle} color="brown" />
       </div>
 
       {/* Main Content Grid */}
@@ -71,30 +71,22 @@ const Dashboard = () => {
             {attentionStudents.length === 0 ? (
               <EmptyState title="All clear!" description="No students currently require immediate attention." />
             ) : (
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse min-w-[500px]">
-                  <thead>
-                    <tr className="border-b border-border-subtle bg-paper/50">
-                      <th className="px-6 py-3 font-semibold text-text-secondary text-sm whitespace-nowrap">Student</th>
-                      <th className="px-6 py-3 font-semibold text-text-secondary text-sm whitespace-nowrap">Class</th>
-                      <th className="px-6 py-3 font-semibold text-text-secondary text-sm">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attentionStudents.map((item, idx) => (
-                      <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <Avatar name={item.name} size="sm" />
-                            <span className="font-semibold text-navy">{item.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-medium text-navy whitespace-nowrap">{item.class}</td>
-                        <td className="px-6 py-4 text-sm text-text-secondary min-w-[200px]">{item.reason}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex flex-col gap-3 px-6 pb-6">
+                <div className="grid grid-cols-12 gap-4 px-5 py-2 border-b border-border-subtle text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+                  <div className="col-span-4">Student</div>
+                  <div className="col-span-2">Class</div>
+                  <div className="col-span-6">Reason</div>
+                </div>
+                {attentionStudents.map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/50 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 transition-all">
+                    <div className="col-span-4 flex items-center gap-3">
+                      <Avatar name={item.name} size="sm" />
+                      <span className="font-bold text-navy">{item.name}</span>
+                    </div>
+                    <div className="col-span-2 font-medium text-navy">{item.class}</div>
+                    <div className="col-span-6 text-sm text-text-secondary truncate">{item.reason}</div>
+                  </div>
+                ))}
               </div>
             )}
           </Card>
@@ -110,23 +102,17 @@ const Dashboard = () => {
             {attentionClasses.length === 0 ? (
               <EmptyState title="All clear!" description="No classes currently require immediate attention." />
             ) : (
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse min-w-[500px]">
-                  <thead>
-                    <tr className="border-b border-border-subtle bg-paper/50">
-                      <th className="px-6 py-3 font-semibold text-text-secondary text-sm whitespace-nowrap">Class</th>
-                      <th className="px-6 py-3 font-semibold text-text-secondary text-sm">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attentionClasses.map((item, idx) => (
-                      <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                        <td className="px-6 py-4 font-semibold text-navy whitespace-nowrap">{item.class}</td>
-                        <td className="px-6 py-4 text-sm text-text-secondary min-w-[200px]">{item.reason}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex flex-col gap-3 px-6 pb-6">
+                <div className="grid grid-cols-12 gap-4 px-5 py-2 border-b border-border-subtle text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+                  <div className="col-span-4">Class</div>
+                  <div className="col-span-8">Reason</div>
+                </div>
+                {attentionClasses.map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/50 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 transition-all">
+                    <div className="col-span-4 font-bold text-navy">{item.class}</div>
+                    <div className="col-span-8 text-sm text-text-secondary truncate">{item.reason}</div>
+                  </div>
+                ))}
               </div>
             )}
           </Card>
@@ -160,17 +146,17 @@ const Dashboard = () => {
               {tasks.map(task => (
                 <div 
                   key={task.id} 
-                  className={`flex items-start gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
-                    task.completed ? 'border-success/30 bg-success-light/30' : 'border-border-subtle hover:border-gold/50'
+                  className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 ${
+                    task.completed ? 'border-success/20 bg-success-light/40 backdrop-blur' : 'bg-white/50 backdrop-blur-md border-white/60 hover:border-gold/30'
                   }`}
                   onClick={() => toggleTask(task.id)}
                 >
-                  <div className={`mt-0.5 shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    task.completed ? 'border-success bg-success' : 'border-text-muted'
+                  <div className={`mt-0.5 shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${
+                    task.completed ? 'border-success bg-success' : 'border-text-muted/50 bg-white'
                   }`}>
-                    {task.completed && <Check size={14} className="text-white" />}
+                    {task.completed && <Check size={16} className="text-white" />}
                   </div>
-                  <span className={`text-sm ${task.completed ? 'text-text-muted line-through' : 'text-navy font-medium'}`}>
+                  <span className={`text-[15px] leading-relaxed ${task.completed ? 'text-text-muted line-through' : 'text-navy font-semibold'}`}>
                     {task.text}
                   </span>
                 </div>
@@ -178,28 +164,28 @@ const Dashboard = () => {
             </div>
 
             {isAddingTask ? (
-              <form onSubmit={addTask} className="mt-auto flex flex-col gap-3 p-4 bg-paper-light rounded-xl border border-border-subtle">
+              <form onSubmit={addTask} className="mt-auto flex flex-col gap-3 p-4 bg-white/60 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)]">
                 <input 
                   type="text" 
                   autoFocus
                   placeholder="What needs to be done?" 
-                  className="input-tactile py-2 px-3 text-sm"
+                  className="w-full bg-transparent border-none outline-none text-navy placeholder-text-muted text-[15px] font-medium"
                   value={newTaskText}
                   onChange={(e) => setNewTaskText(e.target.value)}
                   disabled={isSavingTask}
                 />
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => setIsAddingTask(false)} disabled={isSavingTask}>Cancel</Button>
-                  <Button type="submit" variant="primary" className="px-4 py-1.5 text-xs" isLoading={isSavingTask}>Save Task</Button>
+                <div className="flex justify-end gap-2 pt-2 border-t border-border-subtle">
+                  <Button type="button" variant="ghost" className="px-4 py-2 text-sm rounded-xl" onClick={() => setIsAddingTask(false)} disabled={isSavingTask}>Cancel</Button>
+                  <Button type="submit" variant="primary" className="px-5 py-2 text-sm rounded-xl shadow-md" isLoading={isSavingTask}>Save Task</Button>
                 </div>
               </form>
             ) : (
               <Button 
-                variant="outline" 
-                className="w-full mt-auto border-dashed border-2 text-text-secondary hover:text-navy hover:border-navy shrink-0"
+                variant="primary" 
+                className="w-full mt-auto bg-navy text-white shadow-[0_8px_20px_rgba(27,37,65,0.15)] hover:shadow-[0_12px_24px_rgba(27,37,65,0.2)] rounded-[20px] font-bold text-[15px] h-14 shrink-0 transition-all"
                 onClick={() => setIsAddingTask(true)}
               >
-                <Plus size={18} /> Add Task
+                <Plus size={20} className="mr-2" /> Add Task
               </Button>
             )}
           </Card>

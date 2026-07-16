@@ -6,7 +6,7 @@ import { teacherData } from '../../data/mockData';
 
 const Topbar = ({ onMenuClick }) => {
   return (
-    <div className="h-[90px] flex items-center justify-between sticky top-0 bg-paper/80 backdrop-blur-lg z-10 -mx-4 px-4 md:-mx-8 md:px-8 mb-8">
+    <div className="h-[90px] flex items-center justify-between sticky top-0 bg-transparent backdrop-blur-md z-10 -mx-4 px-4 md:-mx-8 md:px-8 mb-8 border-b border-transparent">
       
       <button 
         onClick={onMenuClick}
