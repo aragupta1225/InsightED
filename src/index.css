@@ -75,6 +75,12 @@
     font-family: var(--font-serif);
     font-weight: 400;
   }
+
+  /* Hide default browser password reveal buttons */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
 }
 
 @layer components {

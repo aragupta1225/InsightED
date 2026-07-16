@@ -14,9 +14,6 @@ const Button = ({ children, variant = 'primary', className = '', onClick, type =
       disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading && (
-        <LoadingSpinner size={18} className={variant === 'outline' ? 'text-navy' : 'text-white'} />
-      )}
       <span className={isLoading ? 'opacity-0' : 'opacity-100 flex items-center gap-2'}>
         {children}
       </span>

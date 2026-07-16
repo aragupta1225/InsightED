@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, CalendarCheck, AlertTriangle, BookOpen, Check, Plus, AlertCircle } from 'lucide-react';
+import { Users, CalendarCheck, AlertTriangle, BookOpen, Check, Plus, AlertCircle, X } from 'lucide-react';
 import StatCard from '../../components/common/StatCard';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -18,6 +18,10 @@ const Dashboard = () => {
 
   const toggleTask = (id) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const removeTask = (id) => {
+    setTasks(tasks.filter(t => t.id !== id));
   };
 
   const addTask = (e) => {
@@ -146,7 +150,7 @@ const Dashboard = () => {
               {tasks.map(task => (
                 <div 
                   key={task.id} 
-                  className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 ${
+                  className={`group flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 ${
                     task.completed ? 'border-[#1E2B59]/20 bg-[#1E2B59]/5' : 'bg-white border-white hover:border-[#1E2B59]/30'
                   }`}
                   onClick={() => toggleTask(task.id)}
@@ -159,6 +163,14 @@ const Dashboard = () => {
                   <span className={`text-[15px] leading-relaxed ${task.completed ? 'text-text-muted line-through' : 'text-navy font-semibold'}`}>
                     {task.text}
                   </span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeTask(task.id); }}
+                    className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg shrink-0"
+                    title="Remove task"
+                  >
+                    <X size={16} strokeWidth={2.5} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -176,7 +188,7 @@ const Dashboard = () => {
                 />
                 <div className="flex justify-end gap-2 pt-2 border-t border-border-subtle">
                   <Button type="button" variant="ghost" className="px-4 py-2 text-sm rounded-xl" onClick={() => setIsAddingTask(false)} disabled={isSavingTask}>Cancel</Button>
-                  <Button type="submit" variant="primary" className="px-5 py-2 text-sm rounded-xl shadow-md" isLoading={isSavingTask}>Save Task</Button>
+                  <Button type="submit" variant="primary" className="px-5 py-2 text-sm rounded-xl shadow-md" disabled={isSavingTask}>Save Task</Button>
                 </div>
               </form>
             ) : (

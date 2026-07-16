@@ -48,10 +48,10 @@ export const attentionClasses = [
 
 export const initialTasks = [
   { id: 1, text: 'Review mid-term papers for 8-A', completed: false },
-  { id: 2, text: 'Submit weekly attendance report to admin', completed: true },
+  { id: 2, text: 'Submit weekly attendance report to admin', completed: false },
   { id: 3, text: 'Prepare questions for tomorrow\'s quiz', completed: false },
   { id: 4, text: 'Meet with Rohan Verma\'s parents', completed: false },
-  { id: 5, text: 'Update marks in the central database', completed: true },
+  { id: 5, text: 'Update marks in the central database', completed: false },
 ];
 
 export const mockTestHistory = [
