@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, BarChart3, Users, CalendarCheck, BookOpen, Download, Upload, Plus, Save, Edit, ArrowUpDown, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ChevronRight, BarChart3, Users, CalendarCheck, BookOpen, Download, Upload, Plus, Save, Edit, ArrowUpDown, CheckCircle, Check, X, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import * as XLSX from 'xlsx';
 import Card from '../../components/common/Card';
@@ -189,23 +189,54 @@ const ClassDetails = () => {
 
   // --- ATTENDANCE MANAGEMENT STATE ---
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
-  const [attendanceData, setAttendanceData] = useState(
-    initialStudents.reduce((acc, s) => ({ ...acc, [s.id]: true }), {})
-  );
+  const [attendanceData, setAttendanceData] = useState({});
+  const [attendanceStatus, setAttendanceStatus] = useState('new'); // 'new', 'viewing', 'editing'
+  const [originalAttendanceData, setOriginalAttendanceData] = useState(null);
   const [isSavingAttendance, setIsSavingAttendance] = useState(false);
   const [attendanceSaved, setAttendanceSaved] = useState(false);
 
+  useEffect(() => {
+    if (activeTab !== 'attendance') return;
+    
+    const key = `attendance_${id}_${attendanceDate}`;
+    const saved = localStorage.getItem(key);
+    
+    if (saved) {
+      setAttendanceData(JSON.parse(saved));
+      setAttendanceStatus('viewing');
+    } else {
+      setAttendanceData(initialStudents.reduce((acc, s) => ({ ...acc, [s.id]: true }), {}));
+      setAttendanceStatus('new');
+    }
+    setAttendanceSaved(false);
+  }, [attendanceDate, id, activeTab]);
+
   const toggleStudentAttendance = (studentId) => {
+    if (attendanceStatus === 'viewing') return;
     setAttendanceData(prev => ({ ...prev, [studentId]: !prev[studentId] }));
   };
 
   const saveAttendance = () => {
     setIsSavingAttendance(true);
     setTimeout(() => {
+      const key = `attendance_${id}_${attendanceDate}`;
+      localStorage.setItem(key, JSON.stringify(attendanceData));
+      
       setIsSavingAttendance(false);
+      setAttendanceStatus('viewing');
       setAttendanceSaved(true);
       setTimeout(() => setAttendanceSaved(false), 3000);
     }, 1000);
+  };
+
+  const handleEditAttendance = () => {
+    setOriginalAttendanceData({ ...attendanceData });
+    setAttendanceStatus('editing');
+  };
+
+  const handleCancelEdit = () => {
+    setAttendanceData(originalAttendanceData);
+    setAttendanceStatus('viewing');
   };
 
   const mockWeeklyAttendance = [
@@ -593,18 +624,39 @@ const ClassDetails = () => {
                         className="input-tactile py-1 px-3 text-sm w-auto"
                         value={attendanceDate}
                         onChange={(e) => setAttendanceDate(e.target.value)}
-                        disabled={isSavingAttendance}
+                        disabled={isSavingAttendance || attendanceStatus === 'editing'}
                       />
                     </div>
-                    <Button 
-                      variant="primary" 
-                      onClick={saveAttendance} 
-                      isLoading={isSavingAttendance}
-                    >
-                      Save Attendance
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      {attendanceStatus === 'new' && (
+                        <Button variant="primary" onClick={saveAttendance} isLoading={isSavingAttendance}>
+                          <Save size={16} className="mr-2 inline" /> Save Attendance
+                        </Button>
+                      )}
+                      {attendanceStatus === 'viewing' && (
+                        <Button variant="outline" onClick={handleEditAttendance}>
+                          <Edit size={16} className="mr-2 inline" /> Edit Attendance
+                        </Button>
+                      )}
+                      {attendanceStatus === 'editing' && (
+                        <>
+                          <Button variant="ghost" onClick={handleCancelEdit} disabled={isSavingAttendance}>
+                            Cancel
+                          </Button>
+                          <Button variant="primary" onClick={saveAttendance} isLoading={isSavingAttendance}>
+                            <Save size={16} className="mr-2 inline" /> Save Changes
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                   
+                  {attendanceStatus === 'viewing' && (
+                    <div className="m-4 p-3 bg-paper-light border border-border-subtle text-text-secondary rounded-xl text-sm font-medium flex items-center gap-2">
+                      <AlertCircle size={18} className="text-navy" /> Attendance already recorded for this date.
+                    </div>
+                  )}
+
                   {attendanceSaved && (
                     <div className="m-4 p-3 bg-success-light text-success rounded-xl text-sm font-bold flex items-center justify-center gap-2 animate-in fade-in">
                       <CheckCircle size={18} /> Attendance saved successfully!
@@ -622,17 +674,23 @@ const ClassDetails = () => {
                       </thead>
                       <tbody>
                         {initialStudents.map(student => (
-                          <tr key={student.id} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
+                          <tr key={student.id} className={`border-b border-border-subtle last:border-none transition-colors ${attendanceStatus === 'viewing' ? 'hover:bg-transparent' : 'hover:bg-paper-light'}`}>
                             <td className="px-6 py-3 font-semibold text-navy">{student.rollNo}</td>
                             <td className="px-6 py-3 font-medium text-navy">{student.name}</td>
                             <td className="px-6 py-3 text-right">
-                              <input 
-                                type="checkbox" 
-                                className="w-5 h-5 accent-navy cursor-pointer ml-auto block"
-                                checked={attendanceData[student.id] || false}
-                                onChange={() => toggleStudentAttendance(student.id)}
-                                disabled={isSavingAttendance}
-                              />
+                              {attendanceStatus === 'viewing' ? (
+                                attendanceData[student.id] 
+                                  ? <span className="flex items-center justify-end gap-1 text-success font-bold"><Check size={16} /> Present</span> 
+                                  : <span className="flex items-center justify-end gap-1 text-danger font-bold"><X size={16} /> Absent</span>
+                              ) : (
+                                <input 
+                                  type="checkbox" 
+                                  className="w-5 h-5 accent-navy cursor-pointer ml-auto block"
+                                  checked={attendanceData[student.id] || false}
+                                  onChange={() => toggleStudentAttendance(student.id)}
+                                  disabled={isSavingAttendance}
+                                />
+                              )}
                             </td>
                           </tr>
                         ))}
