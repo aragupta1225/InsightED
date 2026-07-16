@@ -61,20 +61,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Subtle texture/glow for premium depth */}
       <div className="absolute top-[-10%] left-[-20%] w-[150%] h-[40%] bg-white/5 rounded-full blur-[80px] pointer-events-none" />
 
-      <div className="p-8 flex items-center justify-between gap-3 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/90 backdrop-blur flex items-center justify-center shadow-lg border border-white/20">
-            <span className="text-navy font-bold text-xl font-serif">I</span>
-          </div>
-          <span className="text-xl font-bold text-white tracking-tight font-serif">InsightED</span>
-        </div>
-        <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 text-text-muted hover:text-white hover:bg-white/10 rounded-xl transition-all">
+      <div className="pt-10 pb-6 flex items-start justify-center relative z-10 px-4">
+        <img src="/logo.png" alt="InsightED Logo" className="w-[180px] h-auto object-contain mx-auto" />
+        <button onClick={() => setIsOpen(false)} className="lg:hidden absolute right-4 top-6 p-2 text-text-muted hover:text-white hover:bg-white/10 rounded-xl transition-all">
           <X size={24} />
         </button>
       </div>
 
-      <div className="flex-1 px-4 py-2 flex flex-col gap-2 overflow-y-auto">
-        <div className="text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2 px-4">Menu</div>
+      <div className="flex-1 px-4 py-2 flex flex-col gap-2 overflow-y-auto mt-2">
         {menuItems.map(item => <NavItem key={item.path} item={item} />)}
       </div>
 
