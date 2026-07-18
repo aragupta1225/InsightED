@@ -5,9 +5,14 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
-import { mockDashboardStats, attentionStudents, attentionClasses, initialTasks } from '../../data/mockData';
+import { initialTasks } from '../../data/mockData';
+import { useNavigate } from 'react-router-dom';
+import useStudentStore from '../../store/studentStore';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const students = useStudentStore(state => state.students);
+  
   const [tasks, setTasks] = useState(initialTasks);
   const [newTaskText, setNewTaskText] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -44,6 +49,36 @@ const Dashboard = () => {
     }, 800);
   };
 
+  if (students.length === 0) {
+    return (
+      <div className="flex flex-col gap-8">
+        <Card className="mt-8 flex flex-col items-center">
+          <EmptyState 
+            title="No Data Found" 
+            description="Please import student data to view the dashboard." 
+          />
+          <Button variant="primary" onClick={() => navigate('/import-data')} className="mt-4 mb-8">
+            Import Data
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const totalStudents = students.length;
+  const uniqueClasses = new Set(students.map(s => `${s.class}-${s.section}`)).size;
+  const totalBoys = students.filter(s => {
+    const gender = (s.gender || '').toLowerCase();
+    return gender === 'male' || gender === 'm' || gender === 'boy';
+  }).length;
+  const totalGirls = students.filter(s => {
+    const gender = (s.gender || '').toLowerCase();
+    return gender === 'female' || gender === 'f' || gender === 'girl';
+  }).length;
+
+  const attentionStudents = [];
+  const attentionClasses = [];
+
   return (
     <div className="flex flex-col gap-8">
       <div className="mb-4">
@@ -53,10 +88,10 @@ const Dashboard = () => {
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Students" value={mockDashboardStats.totalStudents} icon={Users} color="pink" />
-        <StatCard title="Classes Monitored" value={mockDashboardStats.classesMonitored} icon={BookOpen} color="blue" />
-        <StatCard title="Attendance Today" value={`${mockDashboardStats.attendanceToday}%`} icon={CalendarCheck} color="pink" />
-        <StatCard title="Students Needing Support" value={mockDashboardStats.studentsNeedingSupport} icon={AlertTriangle} color="blue" />
+        <StatCard title="Total Students" value={totalStudents} icon={Users} color="pink" />
+        <StatCard title="Classes Monitored" value={uniqueClasses} icon={BookOpen} color="blue" />
+        <StatCard title="Total Boys" value={totalBoys} icon={Users} color="pink" />
+        <StatCard title="Total Girls" value={totalGirls} icon={Users} color="blue" />
       </div>
 
       {/* Main Content Grid */}
