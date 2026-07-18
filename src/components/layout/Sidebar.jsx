@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BarChart3, CalendarCheck, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Users, Database, BarChart3, CalendarCheck, Settings, LogOut, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Button from '../common/Button';
 
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/classes', icon: Users, label: 'Classes' },
+  { path: '/import-data', icon: Database, label: 'Import Data' },
   { path: '/performance', icon: BarChart3, label: 'Performance' },
   { path: '/attendance', icon: CalendarCheck, label: 'Attendance' },
 ];

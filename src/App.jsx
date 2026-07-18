@@ -8,6 +8,7 @@ import Performance from './pages/Performance/Performance';
 import Attendance from './pages/Attendance/Attendance';
 import Settings from './pages/Settings/Settings';
 import StudentProfile from './pages/Students/StudentProfile';
+import ImportData from './pages/ImportData/ImportData';
 
 const ProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -29,6 +30,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/classes" element={<Classes />} />
           <Route path="/classes/:id" element={<ClassDetails />} />
+          <Route path="/import-data" element={<ImportData />} />
           <Route path="/performance" element={<Performance />} />
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/settings" element={<Settings />} />

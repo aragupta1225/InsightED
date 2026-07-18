@@ -103,8 +103,8 @@
   }
   
   .btn-outline {
-    @apply bg-transparent border-2 border-border-subtle text-navy px-6 py-3 rounded-[14px] font-medium 
-           transition-all duration-200 hover:border-navy hover:bg-paper-light active:scale-[0.98];
+    @apply bg-white text-navy px-6 py-3 rounded-[14px] font-medium shadow-sm
+           transition-all duration-200 hover:scale-105 active:scale-[0.98];
   }
 
   .badge-success { @apply px-3 py-1.5 rounded-full text-xs font-semibold bg-success-light text-success; }
