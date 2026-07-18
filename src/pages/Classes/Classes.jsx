@@ -6,11 +6,13 @@ import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import Avatar from '../../components/common/Avatar';
 import useStudentStore from '../../store/studentStore';
+import useAnalytics from '../../hooks/useAnalytics';
 
 const Classes = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const students = useStudentStore(state => state.students);
+  const { getClassMetrics } = useAnalytics();
 
   const filteredStudents = students.filter(student => {
     if (!searchQuery) return true;
@@ -39,7 +41,15 @@ const Classes = () => {
     classMap[classKey].studentsCount++;
   });
   
-  const dynamicClasses = Object.values(classMap).sort((a, b) => a.id.localeCompare(b.id));
+  const dynamicClasses = Object.values(classMap).map(cls => {
+    const metrics = getClassMetrics(cls.id);
+    return {
+      ...cls,
+      avgAttendance: metrics.avgAttendance,
+      avgMarks: metrics.avgMarks,
+      studentsNeedingSupport: metrics.studentsNeedingAttention.length
+    };
+  }).sort((a, b) => a.id.localeCompare(b.id));
 
   return (
     <div className="flex flex-col gap-8">

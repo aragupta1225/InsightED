@@ -8,6 +8,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { initialTasks } from '../../data/mockData';
 import { useNavigate } from 'react-router-dom';
 import useStudentStore from '../../store/studentStore';
+import useAnalytics from '../../hooks/useAnalytics';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -49,6 +50,53 @@ const Dashboard = () => {
     }, 800);
   };
 
+  const totalStudents = students.length;
+  const uniqueClasses = new Set(students.map(s => `${s.class}-${s.section}`)).size;
+  const totalBoys = students.filter(s => {
+    const gender = (s.gender || '').toLowerCase();
+    return gender === 'male' || gender === 'm' || gender === 'boy';
+  }).length;
+  const totalGirls = students.filter(s => {
+    const gender = (s.gender || '').toLowerCase();
+    return gender === 'female' || gender === 'f' || gender === 'girl';
+  }).length;
+
+  const { getClassMetrics } = useAnalytics();
+
+  let attentionStudents = [];
+  let attentionClasses = [];
+
+  const uniqueClassesList = Array.from(new Set(students.filter(s => s.class && s.section).map(s => `${s.class}-${s.section}`)));
+  uniqueClassesList.forEach(classKey => {
+    const metrics = getClassMetrics(classKey);
+    
+    if (metrics.studentsNeedingAttention && metrics.studentsNeedingAttention.length > 0) {
+      attentionStudents = [
+        ...attentionStudents,
+        ...metrics.studentsNeedingAttention.map(s => ({
+          name: s.name,
+          class: classKey,
+          reason: 'Needs academic or attendance support'
+        }))
+      ];
+    }
+
+    if (metrics.avgAttendance > 0 && metrics.avgAttendance < 75) {
+      attentionClasses.push({
+        class: classKey,
+        reason: `Low average attendance (${metrics.avgAttendance}%)`
+      });
+    } else if (metrics.avgMarks > 0 && metrics.avgMarks < 60) {
+      attentionClasses.push({
+        class: classKey,
+        reason: `Low average marks (${metrics.avgMarks}%)`
+      });
+    }
+  });
+
+  attentionStudents = attentionStudents.slice(0, 8);
+  attentionClasses = attentionClasses.slice(0, 8);
+
   if (students.length === 0) {
     return (
       <div className="flex flex-col gap-8">
@@ -64,20 +112,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
-  const totalStudents = students.length;
-  const uniqueClasses = new Set(students.map(s => `${s.class}-${s.section}`)).size;
-  const totalBoys = students.filter(s => {
-    const gender = (s.gender || '').toLowerCase();
-    return gender === 'male' || gender === 'm' || gender === 'boy';
-  }).length;
-  const totalGirls = students.filter(s => {
-    const gender = (s.gender || '').toLowerCase();
-    return gender === 'female' || gender === 'f' || gender === 'girl';
-  }).length;
-
-  const attentionStudents = [];
-  const attentionClasses = [];
 
   return (
     <div className="flex flex-col gap-8">

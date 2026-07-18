@@ -8,12 +8,15 @@ import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import ReportModal from '../../components/common/ReportModal';
 import useStudentStore from '../../store/studentStore';
+import useAnalytics from '../../hooks/useAnalytics';
 
 const StudentProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const students = useStudentStore(state => state.students);
   const student = students.find(s => String(s.studentId) === String(id));
+  const { getStudentMetrics } = useAnalytics();
+  const m = student ? getStudentMetrics(student.studentId, `${student.class}-${student.section}`) : { attendance: 0, avgMarks: 0, testHistory: [] };
 
   const [remarks, setRemarks] = useState(student ? student.remarks || [] : []);
   const [isAddingRemark, setIsAddingRemark] = useState(false);
@@ -181,25 +184,25 @@ const StudentProfile = () => {
             <h3 className="text-lg font-semibold text-navy mb-6">Performance Summary</h3>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-paper-light">
-                <div className="p-2 bg-success-light text-success rounded-lg shrink-0">
-                  <CheckCircle size={24} />
+                <div className={`p-2 rounded-lg shrink-0 ${m.avgMarks > 0 ? (m.avgMarks >= 80 ? 'bg-success-light text-success' : m.avgMarks < 40 ? 'bg-danger-light text-danger' : 'bg-gold-light text-gold') : 'bg-paper text-text-muted'}`}>
+                  {m.avgMarks > 0 && m.avgMarks < 40 ? <AlertTriangle size={24} /> : <CheckCircle size={24} />}
                 </div>
                 <div>
-                  <h4 className="font-semibold text-navy mb-1">Overall Status</h4>
+                  <h4 className="font-semibold text-navy mb-1">Overall Score: {m.avgMarks > 0 ? `${m.avgMarks}%` : 'N/A'}</h4>
                   <p className="text-sm text-text-secondary">
-                    Data not available. Performance tracking is not enabled yet.
+                    {m.avgMarks > 0 ? (m.avgMarks >= 80 ? 'Excellent performance.' : m.avgMarks < 40 ? 'Needs attention.' : 'Average performance.') : 'Data not available.'}
                   </p>
                 </div>
               </div>
               
               <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-paper-light">
-                <div className="p-2 bg-paper rounded-lg shrink-0 text-text-muted">
-                  <AlertTriangle size={24} />
+                <div className={`p-2 rounded-lg shrink-0 ${m.attendance > 0 ? (m.attendance < 75 ? 'bg-danger-light text-danger' : 'bg-success-light text-success') : 'bg-paper text-text-muted'}`}>
+                  {m.attendance > 0 && m.attendance < 75 ? <AlertTriangle size={24} /> : <CheckCircle size={24} />}
                 </div>
                 <div>
-                  <h4 className="font-semibold text-navy mb-1">Attendance Flag</h4>
+                  <h4 className="font-semibold text-navy mb-1">Attendance: {m.attendance > 0 ? `${m.attendance}%` : 'N/A'}</h4>
                   <p className="text-sm text-text-secondary">
-                    Data not available. Attendance tracking is not enabled yet.
+                    {m.attendance > 0 ? (m.attendance < 75 ? 'Low attendance warning.' : 'Good attendance.') : 'Data not available.'}
                   </p>
                 </div>
               </div>
@@ -223,11 +226,21 @@ const StudentProfile = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td colSpan="3" className="px-6 py-12 text-center text-text-secondary">
-                      No test history available.
-                    </td>
-                  </tr>
+                  {m.testHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="px-6 py-12 text-center text-text-secondary">
+                        No test history available.
+                      </td>
+                    </tr>
+                  ) : (
+                    m.testHistory.map((test, idx) => (
+                      <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light">
+                        <td className="px-6 py-4 font-semibold text-navy">{test.testName} <span className="text-xs text-text-muted font-normal ml-1">({test.subject})</span></td>
+                        <td className="px-6 py-4 text-text-secondary text-sm">{test.date}</td>
+                        <td className="px-6 py-4 font-bold text-navy text-right">{test.percentage}% <span className="text-xs text-text-muted font-normal ml-1">({test.marks}/{test.maxMarks})</span></td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -262,9 +275,9 @@ const StudentProfile = () => {
             </div>
             <div className="bg-paper-light p-6 rounded-xl border border-border-subtle">
               <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2">Performance Summary</h3>
-              <p><strong>Overall Average:</strong> N/A</p>
-              <p className="mt-2"><strong>Attendance:</strong> N/A</p>
-              <p className="mt-2"><strong>Status:</strong> Active</p>
+              <p><strong>Overall Average:</strong> {m.avgMarks > 0 ? `${m.avgMarks}%` : 'N/A'}</p>
+              <p className="mt-2"><strong>Attendance:</strong> {m.attendance > 0 ? `${m.attendance}%` : 'N/A'}</p>
+              <p className="mt-2"><strong>Status:</strong> {m.status}</p>
             </div>
           </div>
 
@@ -279,9 +292,19 @@ const StudentProfile = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan="3" className="p-6 text-center text-text-secondary">No test history available.</td>
-                </tr>
+                {m.testHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="p-6 text-center text-text-secondary">No test history available.</td>
+                  </tr>
+                ) : (
+                  m.testHistory.map((test, idx) => (
+                    <tr key={idx}>
+                      <td className="p-3 border-b border-border-subtle">{test.testName} <span className="text-xs text-text-muted">({test.subject})</span></td>
+                      <td className="p-3 border-b border-border-subtle">{test.date}</td>
+                      <td className="p-3 border-b border-border-subtle text-right">{test.percentage}%</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

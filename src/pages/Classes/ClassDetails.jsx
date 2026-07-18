@@ -9,11 +9,11 @@ import Avatar from '../../components/common/Avatar';
 import Badge from '../../components/common/Badge';
 import ChartContainer from '../../components/common/ChartContainer';
 import ReportModal from '../../components/common/ReportModal';
-import { subjectPerformance } from '../../data/mockData';
 import EmptyState from '../../components/common/EmptyState';
 import useStudentStore from '../../store/studentStore';
 import useAttendanceStore from '../../store/attendanceStore';
 import usePerformanceStore from '../../store/performanceStore';
+import useAnalytics from '../../hooks/useAnalytics';
 
 const ClassDetails = () => {
   const { id } = useParams();
@@ -32,37 +32,31 @@ const ClassDetails = () => {
   const [className, sectionName] = (id || '').split('-');
   const initialStudents = students.filter(s => s.class === className && s.section === sectionName);
   
-  if (students.length === 0) {
-    return (
-      <div className="flex flex-col gap-8">
-        <Card className="mt-8 flex flex-col items-center">
-          <EmptyState 
-            title="No Data Found" 
-            description="Please import student data first." 
-          />
-          <Button variant="primary" onClick={() => navigate('/import-data')} className="mt-4 mb-8">
-            Import Data
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  const { getClassMetrics, getStudentMetrics } = useAnalytics();
+  const classKey = `${className}-${sectionName}`;
+  const classMetrics = getClassMetrics(classKey);
 
   const classDetails = {
     id,
     name: className,
     section: sectionName,
     studentsCount: initialStudents.length,
-    avgAttendance: 0,
-    avgMarks: 0,
-    studentsNeedingSupport: 0
+    avgAttendance: classMetrics.avgAttendance,
+    avgMarks: classMetrics.avgMarks,
+    studentsNeedingSupport: classMetrics.studentsNeedingAttention.length,
+    topPerformer: classMetrics.topPerformers.length > 0 ? classMetrics.topPerformers[0].name : 'N/A'
   };
 
   // Sorting State for Students Tab
   const [sortConfig, setSortConfig] = useState({ key: 'rollNo', direction: 'asc' });
 
   const sortedStudents = useMemo(() => {
-    let sortableStudents = [...initialStudents];
+    const enrichedStudents = initialStudents.map(student => {
+      const m = getStudentMetrics(student.studentId, classKey);
+      return { ...student, attendance: m.attendance, marks: m.avgMarks, status: m.status };
+    });
+
+    let sortableStudents = [...enrichedStudents];
     if (sortConfig !== null) {
       sortableStudents.sort((a, b) => {
         let aVal = a[sortConfig.key];
@@ -83,7 +77,7 @@ const ClassDetails = () => {
       });
     }
     return sortableStudents;
-  }, [initialStudents, sortConfig]);
+  }, [initialStudents, sortConfig, classKey, getStudentMetrics]);
 
   const requestSort = (key) => {
     let direction = 'asc';
@@ -94,7 +88,7 @@ const ClassDetails = () => {
   };
 
   const chartData = [
-    { name: classDetails.name, attendance: classDetails.avgAttendance, avgScore: classDetails.avgMarks }
+    { name: 'Class Average', attendance: classMetrics.avgAttendance, avgScore: classMetrics.avgMarks }
   ];
 
   const generatedDate = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -109,7 +103,6 @@ const ClassDetails = () => {
 
   // --- TEST MANAGEMENT STATE ---
   const { tests: performanceTests, saveTest, getTestsForClass } = usePerformanceStore();
-  const classKey = `${className}-${sectionName}`;
   const allTests = getTestsForClass(classKey);
 
   const [testState, setTestState] = useState('setup');
@@ -206,7 +199,7 @@ const ClassDetails = () => {
           // Map back to student ID if exists, otherwise generate one
           const matchedStudent = initialStudents.find(s => s.rollNo === rollNo);
           parsedMarks.push({
-            id: matchedStudent ? matchedStudent.id : `STU_TEMP_${i}`,
+            id: matchedStudent ? matchedStudent.studentId : `STU_TEMP_${i}`,
             rollNo,
             name,
             marks: numericMarks
@@ -250,7 +243,9 @@ const ClassDetails = () => {
 
   // --- ATTENDANCE MANAGEMENT STATE ---
   const { getAttendance, saveAttendance: persistAttendance } = useAttendanceStore();
-  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const todayDate = new Date();
+  const localToday = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+  const [attendanceDate, setAttendanceDate] = useState(localToday);
   const [attendanceData, setAttendanceData] = useState({});
   const [attendanceStatus, setAttendanceStatus] = useState('new'); // 'new', 'viewing', 'editing'
   const [originalAttendanceData, setOriginalAttendanceData] = useState(null);
@@ -307,9 +302,7 @@ const ClassDetails = () => {
     { day: 'Fri', present: 89 },
   ];
 
-  const studentsNeedingAttendanceSupport = initialStudents
-    .filter(s => s.attendance < 75)
-    .sort((a, b) => a.attendance - b.attendance);
+  const studentsNeedingAttendanceSupport = classMetrics.lowAttendanceStudents || [];
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -329,6 +322,22 @@ const ClassDetails = () => {
       </div>
     </th>
   );
+
+  if (students.length === 0) {
+    return (
+      <div className="flex flex-col gap-8">
+        <Card className="mt-8 flex flex-col items-center">
+          <EmptyState 
+            title="No Data Found" 
+            description="Please import student data first." 
+          />
+          <Button variant="primary" onClick={() => navigate('/import-data')} className="mt-4 mb-8">
+            Import Data
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -448,8 +457,8 @@ const ClassDetails = () => {
                           <span className="font-bold text-navy">{student.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-navy">{student.attendance || '-'}%</td>
-                      <td className="px-6 py-4 font-medium text-navy">{student.marks || '-'}</td>
+                      <td className="px-6 py-4 font-medium text-navy">{student.attendance !== undefined && student.attendance !== null ? `${student.attendance}%` : '-'}</td>
+                      <td className="px-6 py-4 font-medium text-navy">{student.marks !== undefined && student.marks !== null ? student.marks : '-'}</td>
                       <td className="px-6 py-4">
                         <Badge variant={student.status === 'Needs Support' ? 'danger' : student.status === 'Excellent' ? 'success' : 'info'}>
                           {student.status || 'Active'}
@@ -540,7 +549,7 @@ const ClassDetails = () => {
                   className={`flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-navy transition-colors ${isTestLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-navy/5 cursor-pointer'}`}
                   onClick={() => {
                     if(isTestLoading) return;
-                    setTestMarks(initialStudents.map(s => ({ id: s.id, rollNo: s.rollNo, name: s.name, marks: '' })));
+                    setTestMarks(initialStudents.map(s => ({ id: s.studentId, rollNo: s.rollNo, name: s.name, marks: '' })));
                     setTestState('preview');
                   }}
                 >
@@ -767,7 +776,7 @@ const ClassDetails = () => {
                             <td className="px-6 py-3 font-medium text-navy">{student.name}</td>
                             <td className="px-6 py-3 text-right">
                               {attendanceStatus === 'viewing' ? (
-                                attendanceData[student.studentId] 
+                                attendanceData[student.studentId] === 'present'
                                   ? <span className="flex items-center justify-end gap-1 text-success font-bold"><Check size={16} /> Present</span> 
                                   : <span className="flex items-center justify-end gap-1 text-danger font-bold"><X size={16} /> Absent</span>
                               ) : (
@@ -790,11 +799,18 @@ const ClassDetails = () => {
 
               {/* Right Column: Insights & History */}
               <div className="flex flex-col gap-6 w-full">
-                <Card className="flex flex-col items-center justify-center h-64 text-center">
-                  <EmptyState 
-                    title="Class Analytics Unavailable" 
-                    description="Weekly trends and detailed insights will be available once enough attendance data is collected." 
-                  />
+                <Card className="flex flex-col h-64">
+                  <ChartContainer title="Weekly Attendance Trend">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={mockWeeklyAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(27, 37, 65, 0.08)" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} dy={10} />
+                        <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} />
+                        <Tooltip cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
+                        <Bar dataKey="present" name="Attendance %" fill="#1E2B59" radius={[4, 4, 0, 0]} barSize={30} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </Card>
 
                 <Card noPadding>
@@ -803,8 +819,23 @@ const ClassDetails = () => {
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-border-subtle bg-paper/50">
+                          <th className="px-6 py-3 font-semibold text-text-secondary text-sm">Student</th>
+                          <th className="px-6 py-3 font-semibold text-text-secondary text-sm text-right">Attd %</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        <tr><td className="p-6 text-center text-text-secondary text-sm">No data available</td></tr>
+                        {studentsNeedingAttendanceSupport.length === 0 ? (
+                          <tr><td colSpan="2" className="p-6 text-center text-text-secondary text-sm">No students below 75%</td></tr>
+                        ) : (
+                          studentsNeedingAttendanceSupport.map(s => (
+                            <tr key={s.studentId || s.id} className="border-b border-border-subtle last:border-none">
+                              <td className="px-6 py-3 font-medium text-navy">{s.name}</td>
+                              <td className="px-6 py-3 text-right font-bold text-danger">{s.attendance}%</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -856,12 +887,16 @@ const ClassDetails = () => {
                 </tr>
               </thead>
               <tbody>
-                {subjectPerformance.map((sub, idx) => (
-                  <tr key={idx} className="border-b border-border-subtle">
-                    <td className="p-3">{sub.subject}</td>
-                    <td className="p-3 text-right">{sub.avgMarks}%</td>
-                  </tr>
-                ))}
+                {classMetrics.subjectAverages.length === 0 ? (
+                  <tr><td colSpan="2" className="p-3 text-center text-text-secondary">No data</td></tr>
+                ) : (
+                  classMetrics.subjectAverages.map((sub, idx) => (
+                    <tr key={idx} className="border-b border-border-subtle">
+                      <td className="p-3">{sub.subject}</td>
+                      <td className="p-3 text-right">{sub.average}%</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -870,16 +905,25 @@ const ClassDetails = () => {
             <div>
               <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2 text-success">Top Performers</h3>
               <ul className="list-disc pl-5 space-y-2">
-                <li>{classDetails.topPerformer}</li>
-                <li>{initialStudents.length > 1 ? initialStudents[1].name : 'N/A'}</li>
+                {classMetrics.topPerformers.length === 0 ? (
+                  <li>No data</li>
+                ) : (
+                  classMetrics.topPerformers.map((p, idx) => (
+                    <li key={idx}>{p.name} (Avg: {p.avgScore}%)</li>
+                  ))
+                )}
               </ul>
             </div>
             <div>
               <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2 text-danger">Students Needing Support</h3>
               <ul className="list-disc pl-5 space-y-2">
-                {initialStudents.filter(s => s.status === 'Needs Support').map((s, idx) => (
-                  <li key={idx}>{s.name} (Avg: {s.marks}%)</li>
-                ))}
+                {sortedStudents.filter(s => s.status === 'Needs Support').length === 0 ? (
+                  <li>None</li>
+                ) : (
+                  sortedStudents.filter(s => s.status === 'Needs Support').map((s, idx) => (
+                    <li key={idx}>{s.name} (Avg: {s.marks || 0}%)</li>
+                  ))
+                )}
               </ul>
             </div>
           </div>
@@ -896,4 +940,36 @@ const ClassDetails = () => {
   );
 };
 
-export default ClassDetails;
+
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', color: 'red', background: 'white' }}>
+          <h1>Something went wrong.</h1>
+          <pre>{this.state.error.toString()}</pre>
+          <pre>{this.state.error.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const ClassDetailsWithErrorBoundary = (props) => (
+  <ErrorBoundary>
+    <ClassDetails {...props} />
+  </ErrorBoundary>
+);
+
+export default ClassDetailsWithErrorBoundary;
