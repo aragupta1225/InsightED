@@ -105,7 +105,7 @@ const Attendance = () => {
                   <tbody>
                     {metrics.studentsBelow75List.length === 0 ? (
                       <tr><td colSpan="3" className="p-6 text-center text-text-secondary">No students are currently below 75% attendance.</td></tr>
-                    ) : metrics.studentsBelow75List.slice(0, 10).map((item, idx) => (
+                    ) : metrics.studentsBelow75List.map((item, idx) => (
                       <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
                         <td className="px-6 py-4 font-semibold text-navy">{item.name}</td>
                         <td className="px-6 py-4 font-medium text-navy">{item.class}</td>
