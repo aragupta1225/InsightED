@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { read, utils } from 'xlsx';
+import useStudentStore from '../../store/studentStore';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -32,8 +33,30 @@ const ImportData = () => {
   const [messageIndex, setMessageIndex] = useState(0);
   const [errors, setErrors] = useState([]);
   const [summary, setSummary] = useState({ students: 0, classes: 0, sections: 0 });
+  const setStudents = useStudentStore((state) => state.setStudents);
+  const students = useStudentStore((state) => state.students);
   
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (status === 'default' && students && students.length > 0) {
+      const uniqueClasses = new Set();
+      const uniqueSections = new Set();
+
+      students.forEach(student => {
+        if (student.class) uniqueClasses.add(student.class);
+        if (student.section) uniqueSections.add(`${student.class}-${student.section}`);
+      });
+
+      setSummary({
+        students: students.length,
+        classes: uniqueClasses.size,
+        sections: uniqueSections.size
+      });
+      setStatus('success');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
@@ -130,17 +153,35 @@ const ImportData = () => {
           const uniqueSections = new Set();
           let validStudents = 0;
 
+          const parsedStudents = [];
+
           jsonData.forEach(row => {
             const studentId = String(row['Student ID'] || '').trim();
+            const rollNo = String(row['Roll No.'] || '').trim();
+            const studentName = String(row['Student Name'] || '').trim();
             const className = String(row['Class'] || '').trim();
             const section = String(row['Section'] || '').trim();
+            const gender = String(row['Gender'] || '').trim();
+            const parentContact = String(row['Parent Contact'] || '').trim();
 
             if (studentId) {
+              parsedStudents.push({
+                studentId,
+                rollNo,
+                name: studentName,
+                class: className,
+                section,
+                gender,
+                parentContact
+              });
               validStudents++;
               if (className) uniqueClasses.add(className);
               if (section) uniqueSections.add(`${className}-${section}`);
             }
           });
+
+          // Save globally
+          setStudents(parsedStudents);
 
           setSummary({
             students: validStudents,
@@ -289,9 +330,18 @@ const ImportData = () => {
               </div>
             </div>
 
-            <Button variant="primary" className="px-8 py-3" onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
-            </Button>
+            <div className="flex gap-4">
+              <Button variant="outline" className="px-8 py-3" onClick={() => {
+                setSelectedFile(null);
+                setStatus('default');
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}>
+                Upload New Dataset
+              </Button>
+              <Button variant="primary" className="px-8 py-3" onClick={() => navigate('/dashboard')}>
+                Go to Dashboard
+              </Button>
+            </div>
           </Card>
         </div>
       )}
