@@ -4,9 +4,44 @@ import { Target, Trophy, AlertCircle, TrendingUp } from 'lucide-react';
 import Card from '../../components/common/Card';
 import StatCard from '../../components/common/StatCard';
 import ChartContainer from '../../components/common/ChartContainer';
-import { performanceOverview, mockClasses, subjectPerformance, academicSupportStudents } from '../../data/mockData';
+import EmptyState from '../../components/common/EmptyState';
+import useStudentStore from '../../store/studentStore';
+import usePerformanceStore from '../../store/performanceStore';
 
 const Performance = () => {
+  const performanceTests = usePerformanceStore(state => state.tests);
+
+  let totalMarks = 0;
+  let totalMaxMarks = 0;
+  let classAverages = {};
+
+  Object.entries(performanceTests).forEach(([classSection, tests]) => {
+    let classMarks = 0;
+    let classMax = 0;
+    Object.values(tests).forEach(test => {
+      if (test.marks && test.marks.length > 0) {
+        test.marks.forEach(m => {
+          totalMarks += Number(m.marks) || 0;
+          totalMaxMarks += Number(test.maxMarks) || 100;
+          classMarks += Number(m.marks) || 0;
+          classMax += Number(test.maxMarks) || 100;
+        });
+      }
+    });
+    if (classMax > 0) {
+      classAverages[classSection] = (classMarks / classMax) * 100;
+    }
+  });
+
+  const schoolAvg = totalMaxMarks > 0 ? Math.round((totalMarks / totalMaxMarks) * 100) : 0;
+  let bestClass = 'N/A';
+  let highest = -1;
+  Object.entries(classAverages).forEach(([c, val]) => {
+    if (val > highest) {
+      highest = val;
+      bestClass = c;
+    }
+  });
   return (
     <div className="flex flex-col gap-8">
       <div className="mb-4">
@@ -16,90 +51,19 @@ const Performance = () => {
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="School Average Score" value={`${performanceOverview.schoolAverage}%`} icon={Target} color="pink" />
-        <StatCard title="Top Performing Class" value={performanceOverview.topClass} icon={Trophy} color="blue" />
-        <StatCard title="Classes Needing Attention" value={performanceOverview.classesNeedingAttention} icon={AlertCircle} color="pink" />
-        <StatCard title="Improvement (Last Exam)" value={performanceOverview.improvementSinceLast} icon={TrendingUp} trend="up" color="blue" />
+        <StatCard title="School Average Score" value={`${schoolAvg}%`} icon={Target} color="pink" />
+        <StatCard title="Top Performing Class" value={bestClass} icon={Trophy} color="blue" />
+        <StatCard title="Classes Needing Attention" value={0} icon={AlertCircle} color="pink" />
+        <StatCard title="Improvement (Last Exam)" value="N/A" icon={TrendingUp} color="blue" />
       </div>
 
-      {/* Main Chart */}
-      <div className="h-[400px]">
-        <ChartContainer title="Class-wise Average Scores">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={mockClasses} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(27, 37, 65, 0.08)" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E' }} dy={10} />
-              <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E' }} />
-              <Tooltip
-                cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }}
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }}
-              />
-              <Bar dataKey="avgMarks" name="Average Marks %" fill="#E89BAA" fillOpacity={0.85} radius={[6, 6, 6, 6]} barSize={40} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
-
-      {/* Tables Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Subject Performance Table */}
-        <Card noPadding>
-          <div className="p-6 border-b border-border-subtle bg-paper-light">
-            <h3 className="font-semibold text-navy">Subject Performance</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border-subtle bg-paper/50">
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Subject</th>
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">Average Marks (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {subjectPerformance.map((item, idx) => (
-                  <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                    <td className="px-6 py-4 font-semibold text-navy">{item.subject}</td>
-                    <td className="px-6 py-4 font-bold text-navy text-right">{item.avgMarks}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        {/* Students Needing Academic Support Table */}
-        <Card noPadding>
-          <div className="p-6 border-b border-border-subtle bg-paper-light flex items-center gap-2">
-            <AlertCircle size={20} className="text-danger" />
-            <h3 className="font-semibold text-navy">Students Needing Academic Support</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border-subtle bg-paper/50">
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Student</th>
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Class</th>
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">Marks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {academicSupportStudents.map((item, idx) => (
-                  <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-navy">{item.name}</p>
-                      <p className="text-xs text-text-secondary mt-1">{item.reason}</p>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-navy">{item.class}</td>
-                    <td className="px-6 py-4 font-bold text-danger text-right">{item.marks}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-      </div>
+      {/* Analytics Empty State */}
+      <Card className="mt-4 flex flex-col items-center">
+        <EmptyState 
+          title="Global Analytics Under Construction" 
+          description="Detailed global performance insights and charts will be available in a future update." 
+        />
+      </Card>
     </div>
   );
 };

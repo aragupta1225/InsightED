@@ -4,9 +4,50 @@ import { Users, UserX, AlertTriangle, Trophy } from 'lucide-react';
 import Card from '../../components/common/Card';
 import StatCard from '../../components/common/StatCard';
 import ChartContainer from '../../components/common/ChartContainer';
-import { attendanceOverview, weeklyAttendanceData, lowAttendanceClasses, chronicAbsenteesList } from '../../data/mockData';
+import EmptyState from '../../components/common/EmptyState';
+import useStudentStore from '../../store/studentStore';
+import useAttendanceStore from '../../store/attendanceStore';
 
 const Attendance = () => {
+  const students = useStudentStore(state => state.students);
+  const attendanceRecords = useAttendanceStore(state => state.records);
+
+  const today = new Date().toISOString().split('T')[0];
+  let totalPresent = 0;
+  let totalRecords = 0;
+  let absentTodayCount = 0;
+  const classAttendance = {};
+
+  Object.entries(attendanceRecords).forEach(([classSection, dates]) => {
+    let classPresent = 0;
+    let classTotal = 0;
+    Object.entries(dates).forEach(([date, studentRecords]) => {
+      Object.entries(studentRecords).forEach(([studentId, status]) => {
+        totalRecords++;
+        classTotal++;
+        if (status === 'present') {
+          totalPresent++;
+          classPresent++;
+        }
+        if (date === today && status === 'absent') {
+          absentTodayCount++;
+        }
+      });
+    });
+    if (classTotal > 0) {
+      classAttendance[classSection] = (classPresent / classTotal) * 100;
+    }
+  });
+
+  const avgAttendance = totalRecords > 0 ? Math.round((totalPresent / totalRecords) * 100) : 0;
+  let bestClass = 'N/A';
+  let highest = -1;
+  Object.entries(classAttendance).forEach(([c, val]) => {
+    if (val > highest) {
+      highest = val;
+      bestClass = c;
+    }
+  });
   return (
     <div className="flex flex-col gap-8">
       <div className="mb-4">
@@ -16,87 +57,19 @@ const Attendance = () => {
 
       {/* Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Average Attendance" value={`${attendanceOverview.averageAttendance}%`} icon={Users} color="pink" />
-        <StatCard title="Best Attendance Class" value={attendanceOverview.bestAttendanceClass} icon={Trophy} color="blue" />
-        <StatCard title="Students Absent Today" value={attendanceOverview.absentToday} icon={UserX} color="pink" />
-        <StatCard title="Chronic Absentees" value={attendanceOverview.chronicAbsentees} icon={AlertTriangle} color="blue" />
+        <StatCard title="Average Attendance" value={`${avgAttendance}%`} icon={Users} color="pink" />
+        <StatCard title="Best Attendance Class" value={bestClass} icon={Trophy} color="blue" />
+        <StatCard title="Students Absent Today" value={absentTodayCount} icon={UserX} color="pink" />
+        <StatCard title="Chronic Absentees" value={0} icon={AlertTriangle} color="blue" />
       </div>
 
-      {/* Main Chart */}
-      <div className="h-[400px]">
-        <ChartContainer title="Weekly Attendance">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weeklyAttendanceData} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(27, 37, 65, 0.08)" />
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E' }} dy={10} />
-              <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E' }} />
-              <Tooltip
-                cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }}
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 12px 36px -12px rgba(27, 37, 65, 0.1)' }}
-              />
-              <Bar dataKey="attendance" name="Attendance %" fill="#1E2B59" fillOpacity={0.85} radius={[6, 6, 6, 6]} barSize={40} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
-
-      {/* Tables Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Classes with Low Attendance Table */}
-        <Card noPadding>
-          <div className="p-6 border-b border-border-subtle bg-paper-light">
-            <h3 className="font-semibold text-navy">Classes with Low Attendance</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border-subtle bg-paper/50">
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Class</th>
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">Attendance (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lowAttendanceClasses.map((item, idx) => (
-                  <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                    <td className="px-6 py-4 font-semibold text-navy">{item.name}</td>
-                    <td className="px-6 py-4 font-bold text-danger text-right">{item.attendance}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        {/* Students Below 75% Table */}
-        <Card noPadding>
-          <div className="p-6 border-b border-border-subtle bg-paper-light flex items-center gap-2">
-            <AlertTriangle size={20} className="text-danger" />
-            <h3 className="font-semibold text-navy">Students Below 75% Attendance</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border-subtle bg-paper/50">
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Student</th>
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm">Class</th>
-                  <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">Attendance (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {chronicAbsenteesList.map((item, idx) => (
-                  <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                    <td className="px-6 py-4 font-semibold text-navy">{item.name}</td>
-                    <td className="px-6 py-4 font-medium text-navy">{item.class}</td>
-                    <td className="px-6 py-4 font-bold text-danger text-right">{item.attendance}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-      </div>
+      {/* Analytics Empty State */}
+      <Card className="mt-4 flex flex-col items-center">
+        <EmptyState 
+          title="Global Analytics Under Construction" 
+          description="Detailed global attendance insights and charts will be available in a future update." 
+        />
+      </Card>
     </div>
   );
 };

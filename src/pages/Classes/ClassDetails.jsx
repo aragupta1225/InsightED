@@ -10,7 +10,10 @@ import Badge from '../../components/common/Badge';
 import ChartContainer from '../../components/common/ChartContainer';
 import ReportModal from '../../components/common/ReportModal';
 import { subjectPerformance } from '../../data/mockData';
+import EmptyState from '../../components/common/EmptyState';
 import useStudentStore from '../../store/studentStore';
+import useAttendanceStore from '../../store/attendanceStore';
+import usePerformanceStore from '../../store/performanceStore';
 
 const ClassDetails = () => {
   const { id } = useParams();
@@ -29,6 +32,22 @@ const ClassDetails = () => {
   const [className, sectionName] = (id || '').split('-');
   const initialStudents = students.filter(s => s.class === className && s.section === sectionName);
   
+  if (students.length === 0) {
+    return (
+      <div className="flex flex-col gap-8">
+        <Card className="mt-8 flex flex-col items-center">
+          <EmptyState 
+            title="No Data Found" 
+            description="Please import student data first." 
+          />
+          <Button variant="primary" onClick={() => navigate('/import-data')} className="mt-4 mb-8">
+            Import Data
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   const classDetails = {
     id,
     name: className,
@@ -89,12 +108,40 @@ const ClassDetails = () => {
   };
 
   // --- TEST MANAGEMENT STATE ---
+  const { tests: performanceTests, saveTest, getTestsForClass } = usePerformanceStore();
+  const classKey = `${className}-${sectionName}`;
+  const allTests = getTestsForClass(classKey);
+
   const [testState, setTestState] = useState('setup');
+  const [selectedTestName, setSelectedTestName] = useState('new');
   const [testForm, setTestForm] = useState({ name: '', subject: '', maxMarks: 100, date: '' });
   const [testMarks, setTestMarks] = useState([]); 
   const [testInsights, setTestInsights] = useState(null);
   const [isTestLoading, setIsTestLoading] = useState(false);
   const [testError, setTestError] = useState('');
+
+  const handleTestSelection = (e) => {
+    const val = e.target.value;
+    setSelectedTestName(val);
+    if (val === 'new') {
+      setTestForm({ name: '', subject: '', maxMarks: 100, date: '' });
+      setTestMarks([]);
+      setTestState('setup');
+    } else {
+      const existingTest = allTests[val];
+      if (existingTest) {
+        setTestForm({ name: existingTest.name, subject: existingTest.subject, maxMarks: existingTest.maxMarks, date: existingTest.date });
+        setTestMarks(existingTest.marks || []);
+        setTestState('saved');
+        const marksArr = (existingTest.marks || []).map(t => Number(t.marks) || 0);
+        const avg = marksArr.length > 0 ? (marksArr.reduce((a,b) => a+b, 0) / marksArr.length).toFixed(1) : 0;
+        const max = marksArr.length > 0 ? Math.max(...marksArr) : 0;
+        const min = marksArr.length > 0 ? Math.min(...marksArr) : 0;
+        const below40 = (existingTest.marks || []).filter(t => (Number(t.marks || 0) / existingTest.maxMarks) * 100 < 40).length;
+        setTestInsights({ avg, max, min, below40 });
+      }
+    }
+  };
 
   const handleTestSetupSubmit = (e) => {
     e.preventDefault();
@@ -193,6 +240,8 @@ const ClassDetails = () => {
       const min = marksArr.length > 0 ? Math.min(...marksArr) : 0;
       const below40 = testMarks.filter(t => (Number(t.marks || 0) / testForm.maxMarks) * 100 < 40).length;
 
+      saveTest(classKey, testForm.name, { ...testForm, marks: testMarks });
+
       setTestInsights({ avg, max, min, below40 });
       setIsTestLoading(false);
       setTestState('saved');
@@ -200,6 +249,7 @@ const ClassDetails = () => {
   };
 
   // --- ATTENDANCE MANAGEMENT STATE ---
+  const { getAttendance, saveAttendance: persistAttendance } = useAttendanceStore();
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceData, setAttendanceData] = useState({});
   const [attendanceStatus, setAttendanceStatus] = useState('new'); // 'new', 'viewing', 'editing'
@@ -210,29 +260,27 @@ const ClassDetails = () => {
   useEffect(() => {
     if (activeTab !== 'attendance') return;
     
-    const key = `attendance_${id}_${attendanceDate}`;
-    const saved = localStorage.getItem(key);
+    const saved = getAttendance(classKey, attendanceDate);
     
     if (saved) {
-      setAttendanceData(JSON.parse(saved));
+      setAttendanceData(saved);
       setAttendanceStatus('viewing');
     } else {
-      setAttendanceData(initialStudents.reduce((acc, s) => ({ ...acc, [s.id]: true }), {}));
+      setAttendanceData(initialStudents.reduce((acc, s) => ({ ...acc, [s.studentId]: 'present' }), {}));
       setAttendanceStatus('new');
     }
     setAttendanceSaved(false);
   }, [attendanceDate, id, activeTab]);
 
-  const toggleStudentAttendance = (studentId) => {
+  const setStudentAttendance = (studentId, status) => {
     if (attendanceStatus === 'viewing') return;
-    setAttendanceData(prev => ({ ...prev, [studentId]: !prev[studentId] }));
+    setAttendanceData(prev => ({ ...prev, [studentId]: status }));
   };
 
   const saveAttendance = () => {
     setIsSavingAttendance(true);
     setTimeout(() => {
-      const key = `attendance_${id}_${attendanceDate}`;
-      localStorage.setItem(key, JSON.stringify(attendanceData));
+      persistAttendance(classKey, attendanceDate, attendanceData);
       
       setIsSavingAttendance(false);
       setAttendanceStatus('viewing');
@@ -433,7 +481,15 @@ const ClassDetails = () => {
             
             {testState === 'setup' && (
               <Card>
-                <h3 className="text-xl font-bold text-navy mb-4">Create New Test</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-navy">Create or Load Test</h3>
+                  <select className="input-tactile py-2" value={selectedTestName} onChange={handleTestSelection}>
+                    <option value="new">+ Create New Test</option>
+                    {Object.keys(allTests).map(name => (
+                      <option key={name} value={name}>{name} (Saved)</option>
+                    ))}
+                  </select>
+                </div>
                 {testError && <div className="mb-4 p-3 bg-danger-light text-danger rounded-xl text-sm">{testError}</div>}
                 
                 <form onSubmit={handleTestSetupSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
@@ -606,7 +662,7 @@ const ClassDetails = () => {
               <Card className="flex flex-col justify-center">
                 <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Today's Attd.</p>
                 <p className="text-2xl font-bold text-navy">
-                  {Object.values(attendanceData).filter(Boolean).length} / {initialStudents.length}
+                  {Object.values(attendanceData).filter(status => status === 'present').length} / {initialStudents.length}
                 </p>
               </Card>
               <Card className="flex flex-col justify-center">
@@ -619,7 +675,7 @@ const ClassDetails = () => {
               </Card>
               <Card className="flex flex-col justify-center border-warning-light">
                 <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Consecutive Absentees</p>
-                <p className="text-2xl font-bold text-warning">1</p>
+                <p className="text-2xl font-bold text-warning">0</p>
               </Card>
             </div>
 
@@ -676,6 +732,26 @@ const ClassDetails = () => {
                   )}
 
                   <div className="overflow-x-auto w-full flex-1">
+                    {attendanceStatus !== 'viewing' && (
+                      <div className="flex justify-end p-2 border-b border-border-subtle bg-paper">
+                        <Button 
+                          variant="outline" 
+                          className={`text-xs py-1 px-3 transition-colors ${initialStudents.every(s => attendanceData[s.studentId] === 'present') ? 'bg-border-subtle/50 text-text-secondary border-border-subtle' : ''}`} 
+                          onClick={() => {
+                            const isAllPresent = initialStudents.every(s => attendanceData[s.studentId] === 'present');
+                            const newAtt = { ...attendanceData };
+                            if (isAllPresent) {
+                              initialStudents.forEach(s => newAtt[s.studentId] = 'absent');
+                            } else {
+                              initialStudents.forEach(s => newAtt[s.studentId] = 'present');
+                            }
+                            setAttendanceData(newAtt);
+                          }}
+                        >
+                          <Check size={14} className="mr-1 inline" /> All Present
+                        </Button>
+                      </div>
+                    )}
                     <table className="w-full text-left border-collapse min-w-[400px]">
                       <thead>
                         <tr className="border-b border-border-subtle bg-paper/50">
@@ -686,20 +762,20 @@ const ClassDetails = () => {
                       </thead>
                       <tbody>
                         {initialStudents.map(student => (
-                          <tr key={student.id} className={`border-b border-border-subtle last:border-none transition-colors ${attendanceStatus === 'viewing' ? 'hover:bg-transparent' : 'hover:bg-paper-light'}`}>
+                          <tr key={student.studentId} className={`border-b border-border-subtle last:border-none transition-colors ${attendanceStatus === 'viewing' ? 'hover:bg-transparent' : 'hover:bg-paper-light'}`}>
                             <td className="px-6 py-3 font-semibold text-navy">{student.rollNo}</td>
                             <td className="px-6 py-3 font-medium text-navy">{student.name}</td>
                             <td className="px-6 py-3 text-right">
                               {attendanceStatus === 'viewing' ? (
-                                attendanceData[student.id] 
+                                attendanceData[student.studentId] 
                                   ? <span className="flex items-center justify-end gap-1 text-success font-bold"><Check size={16} /> Present</span> 
                                   : <span className="flex items-center justify-end gap-1 text-danger font-bold"><X size={16} /> Absent</span>
                               ) : (
                                 <input 
                                   type="checkbox" 
                                   className="w-5 h-5 accent-navy cursor-pointer ml-auto block"
-                                  checked={attendanceData[student.id] || false}
-                                  onChange={() => toggleStudentAttendance(student.id)}
+                                  checked={attendanceData[student.studentId] === 'present'}
+                                  onChange={(e) => setStudentAttendance(student.studentId, e.target.checked ? 'present' : 'absent')}
                                   disabled={isSavingAttendance}
                                 />
                               )}
@@ -714,17 +790,12 @@ const ClassDetails = () => {
 
               {/* Right Column: Insights & History */}
               <div className="flex flex-col gap-6 w-full">
-                <ChartContainer title="Weekly Attendance" className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={mockWeeklyAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(27, 37, 65, 0.08)" />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} domain={[0, 100]} />
-                      <Tooltip cursor={{ fill: 'rgba(27, 37, 65, 0.04)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                      <Bar dataKey="present" name="Present %" fill="#E89BAA" fillOpacity={0.85} radius={[4, 4, 0, 0]} barSize={30} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                <Card className="flex flex-col items-center justify-center h-64 text-center">
+                  <EmptyState 
+                    title="Class Analytics Unavailable" 
+                    description="Weekly trends and detailed insights will be available once enough attendance data is collected." 
+                  />
+                </Card>
 
                 <Card noPadding>
                   <div className="p-4 border-b border-border-subtle bg-paper-light">
@@ -733,16 +804,7 @@ const ClassDetails = () => {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <tbody>
-                        {studentsNeedingAttendanceSupport.length === 0 ? (
-                          <tr><td className="p-6 text-center text-text-secondary text-sm">No students below 75%</td></tr>
-                        ) : (
-                          studentsNeedingAttendanceSupport.map(s => (
-                            <tr key={s.id} className="border-b border-border-subtle last:border-none">
-                              <td className="px-4 py-3 font-medium text-navy text-sm">{s.name}</td>
-                              <td className="px-4 py-3 font-bold text-danger text-sm text-right">{s.attendance}%</td>
-                            </tr>
-                          ))
-                        )}
+                        <tr><td className="p-6 text-center text-text-secondary text-sm">No data available</td></tr>
                       </tbody>
                     </table>
                   </div>
