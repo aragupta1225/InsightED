@@ -9,7 +9,8 @@ import Avatar from '../../components/common/Avatar';
 import Badge from '../../components/common/Badge';
 import ChartContainer from '../../components/common/ChartContainer';
 import ReportModal from '../../components/common/ReportModal';
-import { mockClasses, mockStudents, subjectPerformance } from '../../data/mockData';
+import { subjectPerformance } from '../../data/mockData';
+import useStudentStore from '../../store/studentStore';
 
 const ClassDetails = () => {
   const { id } = useParams();
@@ -24,8 +25,19 @@ const ClassDetails = () => {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   
-  const classDetails = mockClasses.find(c => c.id === id) || mockClasses[0];
-  const initialStudents = mockStudents.filter(s => s.classId === id);
+  const students = useStudentStore(state => state.students);
+  const [className, sectionName] = (id || '').split('-');
+  const initialStudents = students.filter(s => s.class === className && s.section === sectionName);
+  
+  const classDetails = {
+    id,
+    name: className,
+    section: sectionName,
+    studentsCount: initialStudents.length,
+    avgAttendance: 0,
+    avgMarks: 0,
+    studentsNeedingSupport: 0
+  };
 
   // Sorting State for Students Tab
   const [sortConfig, setSortConfig] = useState({ key: 'rollNo', direction: 'asc' });
@@ -377,9 +389,9 @@ const ClassDetails = () => {
                 <tbody>
                   {sortedStudents.map((student) => (
                     <tr 
-                      key={student.id} 
+                      key={student.studentId} 
                       className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors cursor-pointer group"
-                      onClick={() => navigate(`/student/${student.id}`)}
+                      onClick={() => navigate(`/student/${student.studentId}`)}
                     >
                       <td className="px-6 py-4 font-semibold text-navy">{student.rollNo}</td>
                       <td className="px-6 py-4">
@@ -388,11 +400,11 @@ const ClassDetails = () => {
                           <span className="font-bold text-navy">{student.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-navy">{student.attendance}%</td>
-                      <td className="px-6 py-4 font-medium text-navy">{student.marks}</td>
+                      <td className="px-6 py-4 font-medium text-navy">{student.attendance || '-'}%</td>
+                      <td className="px-6 py-4 font-medium text-navy">{student.marks || '-'}</td>
                       <td className="px-6 py-4">
                         <Badge variant={student.status === 'Needs Support' ? 'danger' : student.status === 'Excellent' ? 'success' : 'info'}>
-                          {student.status}
+                          {student.status || 'Active'}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right">
