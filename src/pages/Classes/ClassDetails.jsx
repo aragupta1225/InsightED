@@ -286,7 +286,7 @@ const ClassDetails = () => {
             <p className="text-text-secondary text-lg">Comprehensive overview of class performance and roster.</p>
           </div>
         </div>
-        <Button variant="outline" className="flex items-center gap-2" onClick={handleGenerateReport} isLoading={isGeneratingReport}>
+        <Button variant="outline" className="flex items-center gap-2 !border-border-subtle !bg-white hover:!bg-white hover:!border-border-subtle hover:!scale-105 shadow-sm transition-transform" onClick={handleGenerateReport} isLoading={isGeneratingReport}>
           <Download size={18} /> Download Class Report PDF
         </Button>
       </div>

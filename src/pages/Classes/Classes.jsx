@@ -4,15 +4,21 @@ import { ChevronRight, Users, Search, AlertTriangle } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
-import { mockClasses } from '../../data/mockData';
+import Avatar from '../../components/common/Avatar';
+import { mockClasses, mockStudents } from '../../data/mockData';
 
 const Classes = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredClasses = mockClasses.filter(cls => 
-    `${cls.name} ${cls.section}`.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStudents = mockStudents.filter(student => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    const nameParts = student.name.toLowerCase().split(' ');
+    const nameMatches = nameParts.some(part => part.startsWith(query));
+    const rollNoMatches = student.rollNo.startsWith(searchQuery);
+    return nameMatches || rollNoMatches;
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -26,7 +32,7 @@ const Classes = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
           <input 
             type="text" 
-            placeholder="Search classes" 
+            placeholder="Search students" 
             className="input-tactile pl-12"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -34,13 +40,33 @@ const Classes = () => {
         </div>
       </div>
 
-      {filteredClasses.length === 0 ? (
-        <Card className="mt-8">
-          <EmptyState title="No classes found" description={`No class matches the search "${searchQuery}".`} />
-        </Card>
+      {searchQuery ? (
+        filteredStudents.length === 0 ? (
+          <Card className="mt-8">
+            <EmptyState title="No students found" description={`No student matches the search "${searchQuery}".`} />
+          </Card>
+        ) : (
+          <Card className="flex flex-col gap-4">
+            <h3 className="text-lg font-semibold text-navy border-b border-border-subtle pb-3">Search Results</h3>
+            <div className="flex flex-col gap-3">
+              {filteredStudents.map(student => (
+                <div key={student.id} onClick={() => navigate(`/student/${student.id}`)} className="flex items-center justify-between p-4 bg-paper-light border border-border-subtle rounded-xl hover:border-gold hover:bg-white cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <Avatar name={student.name} size="md" />
+                    <div>
+                      <h4 className="font-bold text-navy group-hover:text-gold transition-colors">{student.name}</h4>
+                      <p className="text-sm text-text-secondary">Class {student.classId} • Roll No: {student.rollNo}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-text-muted group-hover:text-gold transition-colors" />
+                </div>
+              ))}
+            </div>
+          </Card>
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClasses.map((cls) => (
+          {mockClasses.map((cls) => (
             <Card key={cls.id} hover className="flex flex-col cursor-pointer group" onClick={() => navigate(`/classes/${cls.id}`)}>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 rounded-xl bg-navy-muted/10 text-navy flex items-center justify-center shrink-0">
