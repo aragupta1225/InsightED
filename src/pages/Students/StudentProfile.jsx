@@ -5,21 +5,54 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import Badge from '../../components/common/Badge';
+import EmptyState from '../../components/common/EmptyState';
 import ReportModal from '../../components/common/ReportModal';
-import { mockStudents, mockTestHistory } from '../../data/mockData';
+import useStudentStore from '../../store/studentStore';
 
 const StudentProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  const student = mockStudents.find(s => s.id === id) || mockStudents[0];
+  const students = useStudentStore(state => state.students);
+  const student = students.find(s => String(s.studentId) === String(id));
 
-  const [remarks, setRemarks] = useState(student.remarks || []);
+  const [remarks, setRemarks] = useState(student ? student.remarks || [] : []);
   const [isAddingRemark, setIsAddingRemark] = useState(false);
   const [newRemarkText, setNewRemarkText] = useState('');
   const [isSavingRemark, setIsSavingRemark] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  if (students.length === 0) {
+    return (
+      <div className="flex flex-col gap-8">
+        <Card className="mt-8 flex flex-col items-center">
+          <EmptyState 
+            title="No Data Found" 
+            description="Please import student data to view student profiles." 
+          />
+          <Button variant="primary" onClick={() => navigate('/import-data')} className="mt-4 mb-8">
+            Import Data
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <div className="flex flex-col gap-8">
+        <Card className="mt-8 flex flex-col items-center">
+          <EmptyState 
+            title="Student Not Found" 
+            description="The requested student profile does not exist." 
+          />
+          <Button variant="outline" onClick={() => navigate('/classes')} className="mt-4 mb-8">
+            Back to Classes
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   const addRemark = (e) => {
     e.preventDefault();
@@ -54,7 +87,7 @@ const StudentProfile = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate(`/classes/${student.classId}?tab=students`)}
+            onClick={() => navigate(`/classes/${student.class}-${student.section}?tab=students`)}
             className="p-2 bg-paper-light border border-border-subtle rounded-xl hover:bg-white hover:border-gold transition-all"
           >
             <ArrowLeft size={20} className="text-navy" />
@@ -74,14 +107,22 @@ const StudentProfile = () => {
             <h2 className="text-xl font-bold text-navy mb-1">{student.name}</h2>
             <p className="text-text-secondary font-medium mb-4">Roll No: {student.rollNo}</p>
             
-            <div className="w-full flex justify-around mb-2">
-              <div className="text-center">
-                <p className="text-sm text-text-muted uppercase tracking-wider mb-1">Marks</p>
-                <p className="text-xl font-bold text-navy">{student.marks}%</p>
+            <div className="w-full flex flex-col gap-3 text-left bg-paper-light p-4 rounded-xl border border-border-subtle mt-2">
+              <div className="flex justify-between">
+                <span className="text-text-secondary text-sm">Student ID</span>
+                <span className="font-semibold text-navy text-sm">{student.studentId || 'Not Available'}</span>
               </div>
-              <div className="text-center">
-                <p className="text-sm text-text-muted uppercase tracking-wider mb-1">Attendance</p>
-                <p className="text-xl font-bold text-navy">{student.attendance}%</p>
+              <div className="flex justify-between">
+                <span className="text-text-secondary text-sm">Class</span>
+                <span className="font-semibold text-navy text-sm">{student.class ? `${student.class}-${student.section}` : 'Not Available'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary text-sm">Gender</span>
+                <span className="font-semibold text-navy text-sm">{student.gender || 'Not Available'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary text-sm">Parent Contact</span>
+                <span className="font-semibold text-navy text-sm">{student.parentContact || 'Not Available'}</span>
               </div>
             </div>
           </Card>
@@ -146,23 +187,19 @@ const StudentProfile = () => {
                 <div>
                   <h4 className="font-semibold text-navy mb-1">Overall Status</h4>
                   <p className="text-sm text-text-secondary">
-                    {student.status === 'Excellent' ? 'Student is performing exceptionally well.' : 
-                     student.status === 'Good' ? 'Student is making steady progress.' : 
-                     'Student requires additional support and attention.'}
+                    Data not available. Performance tracking is not enabled yet.
                   </p>
                 </div>
               </div>
               
               <div className="flex items-start gap-4 p-4 rounded-xl border border-border-subtle bg-paper-light">
-                <div className={`p-2 rounded-lg shrink-0 ${student.attendance >= 75 ? 'bg-info-light text-info' : 'bg-danger-light text-danger'}`}>
+                <div className="p-2 bg-paper rounded-lg shrink-0 text-text-muted">
                   <AlertTriangle size={24} />
                 </div>
                 <div>
                   <h4 className="font-semibold text-navy mb-1">Attendance Flag</h4>
                   <p className="text-sm text-text-secondary">
-                    {student.attendance >= 90 ? 'Attendance is excellent.' : 
-                     student.attendance >= 75 ? 'Attendance is acceptable.' : 
-                     'Critical! Attendance is below 75%.'}
+                    Data not available. Attendance tracking is not enabled yet.
                   </p>
                 </div>
               </div>
@@ -186,13 +223,11 @@ const StudentProfile = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockTestHistory.map((test, idx) => (
-                    <tr key={idx} className="border-b border-border-subtle last:border-none hover:bg-paper-light transition-colors">
-                      <td className="px-6 py-4 font-semibold text-navy whitespace-nowrap">{test.testName}</td>
-                      <td className="px-6 py-4 text-sm text-text-secondary whitespace-nowrap">{test.date}</td>
-                      <td className="px-6 py-4 font-bold text-navy text-right whitespace-nowrap">{test.marks}%</td>
-                    </tr>
-                  ))}
+                  <tr>
+                    <td colSpan="3" className="px-6 py-12 text-center text-text-secondary">
+                      No test history available.
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -222,13 +257,14 @@ const StudentProfile = () => {
               <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2">Student Information</h3>
               <p><strong>Name:</strong> {student.name}</p>
               <p className="mt-2"><strong>Roll No:</strong> {student.rollNo}</p>
-              <p className="mt-2"><strong>Class:</strong> {student.classId}</p>
+              <p className="mt-2"><strong>Class:</strong> {student.class ? `${student.class}-${student.section}` : 'N/A'}</p>
+              <p className="mt-2"><strong>Student ID:</strong> {student.studentId || 'N/A'}</p>
             </div>
             <div className="bg-paper-light p-6 rounded-xl border border-border-subtle">
               <h3 className="font-bold text-lg mb-4 border-b border-border-subtle pb-2">Performance Summary</h3>
-              <p><strong>Overall Average:</strong> {student.marks}%</p>
-              <p className="mt-2"><strong>Attendance:</strong> {student.attendance}%</p>
-              <p className="mt-2"><strong>Status:</strong> {student.status}</p>
+              <p><strong>Overall Average:</strong> N/A</p>
+              <p className="mt-2"><strong>Attendance:</strong> N/A</p>
+              <p className="mt-2"><strong>Status:</strong> Active</p>
             </div>
           </div>
 
@@ -243,13 +279,9 @@ const StudentProfile = () => {
                 </tr>
               </thead>
               <tbody>
-                {mockTestHistory.map((test, idx) => (
-                  <tr key={idx} className="border-b border-border-subtle">
-                    <td className="p-3">{test.testName}</td>
-                    <td className="p-3">{test.date}</td>
-                    <td className="p-3 text-right">{test.marks}%</td>
-                  </tr>
-                ))}
+                <tr>
+                  <td colSpan="3" className="p-6 text-center text-text-secondary">No test history available.</td>
+                </tr>
               </tbody>
             </table>
           </div>
