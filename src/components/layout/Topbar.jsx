@@ -2,12 +2,44 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Menu, AlertCircle } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import Badge from '../common/Badge';
-import { teacherData, attentionStudents } from '../../data/mockData';
-
+import { teacherData } from '../../data/mockData';
+import useStudentStore from '../../store/studentStore';
+import useAnalytics from '../../hooks/useAnalytics';
 const Topbar = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [globalProfilePic, setGlobalProfilePic] = useState(() => localStorage.getItem('profilePic') || null);
   const dropdownRef = useRef(null);
+
+  const students = useStudentStore(state => state.students);
+  const { getClassMetrics, getStudentMetrics } = useAnalytics();
+
+  let attentionStudents = [];
+  const uniqueClassesList = Array.from(new Set(students.filter(s => s.class && s.section).map(s => `${s.class}-${s.section}`)));
+  uniqueClassesList.forEach(classKey => {
+    const metrics = getClassMetrics(classKey);
+    
+    if (metrics.studentsNeedingAttention && metrics.studentsNeedingAttention.length > 0) {
+      attentionStudents = [
+        ...attentionStudents,
+        ...metrics.studentsNeedingAttention.map(s => {
+          const studentMetrics = getStudentMetrics(s.studentId || s.id, classKey);
+          const lowAtt = studentMetrics.attendance !== null && studentMetrics.attendance < 75;
+          const lowMarks = studentMetrics.avgMarks !== null && studentMetrics.avgMarks < 50;
+          
+          let dynamicReason = 'Needs Support';
+          if (lowAtt && lowMarks) dynamicReason = 'Low attendance and low performance';
+          else if (lowAtt) dynamicReason = 'Attendance below 75%';
+          else if (lowMarks) dynamicReason = 'Average score below 50%';
+
+          return {
+            name: s.name,
+            class: classKey,
+            reason: dynamicReason
+          };
+        })
+      ];
+    }
+  });
 
   useEffect(() => {
     const handleProfileUpdate = () => {

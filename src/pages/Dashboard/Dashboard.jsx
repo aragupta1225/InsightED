@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, CalendarCheck, AlertTriangle, BookOpen, Check, Plus, AlertCircle, X } from 'lucide-react';
 import StatCard from '../../components/common/StatCard';
 import Card from '../../components/common/Card';
@@ -14,7 +14,22 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const students = useStudentStore(state => state.students);
   
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState(() => {
+    const saved = localStorage.getItem('insighted_dashboard_tasks');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('insighted_dashboard_tasks', JSON.stringify(tasks));
+  }, [tasks]);
+
   const [newTaskText, setNewTaskText] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isSavingTask, setIsSavingTask] = useState(false);
@@ -34,20 +49,14 @@ const Dashboard = () => {
     e.preventDefault();
     if (!newTaskText.trim()) return;
     
-    setIsSavingTask(true);
-
-    // Simulate network save
-    setTimeout(() => {
-      const newTask = {
-        id: Date.now(),
-        text: newTaskText.trim(),
-        completed: false,
-      };
-      setTasks([...tasks, newTask]);
-      setNewTaskText('');
-      setIsSavingTask(false);
-      setIsAddingTask(false);
-    }, 800);
+    const newTask = {
+      id: Date.now(),
+      text: newTaskText.trim(),
+      completed: false,
+    };
+    setTasks([...tasks, newTask]);
+    setNewTaskText('');
+    setIsAddingTask(false);
   };
 
   const totalStudents = students.length;
@@ -61,7 +70,7 @@ const Dashboard = () => {
     return gender === 'female' || gender === 'f' || gender === 'girl';
   }).length;
 
-  const { getClassMetrics } = useAnalytics();
+  const { getClassMetrics, getStudentMetrics } = useAnalytics();
 
   let attentionStudents = [];
   let attentionClasses = [];
@@ -73,29 +82,43 @@ const Dashboard = () => {
     if (metrics.studentsNeedingAttention && metrics.studentsNeedingAttention.length > 0) {
       attentionStudents = [
         ...attentionStudents,
-        ...metrics.studentsNeedingAttention.map(s => ({
-          name: s.name,
-          class: classKey,
-          reason: 'Needs academic or attendance support'
-        }))
+        ...metrics.studentsNeedingAttention.map(s => {
+          const studentMetrics = getStudentMetrics(s.studentId || s.id, classKey);
+          const lowAtt = studentMetrics.attendance !== null && studentMetrics.attendance < 75;
+          const lowMarks = studentMetrics.avgMarks !== null && studentMetrics.avgMarks < 50;
+          
+          let dynamicReason = 'Needs Support';
+          if (lowAtt && lowMarks) dynamicReason = 'Low Attendance + Low Marks';
+          else if (lowAtt) dynamicReason = 'Low Attendance';
+          else if (lowMarks) dynamicReason = 'Low Marks';
+
+          return {
+            name: s.name,
+            class: classKey,
+            reason: dynamicReason
+          };
+        })
       ];
     }
 
+    let classReasons = [];
     if (metrics.avgAttendance > 0 && metrics.avgAttendance < 75) {
+      classReasons.push(`Low average attendance (${metrics.avgAttendance}%)`);
+    }
+    if (metrics.avgMarks > 0 && metrics.avgMarks < 60) {
+      classReasons.push(`Low average performance (${metrics.avgMarks}%)`);
+    }
+    if (metrics.studentsNeedingAttention && metrics.studentsNeedingAttention.length >= 3) {
+      classReasons.push(`${metrics.studentsNeedingAttention.length} students need support`);
+    }
+
+    if (classReasons.length > 0) {
       attentionClasses.push({
         class: classKey,
-        reason: `Low average attendance (${metrics.avgAttendance}%)`
-      });
-    } else if (metrics.avgMarks > 0 && metrics.avgMarks < 60) {
-      attentionClasses.push({
-        class: classKey,
-        reason: `Low average marks (${metrics.avgMarks}%)`
+        reason: classReasons.join(', ')
       });
     }
   });
-
-  attentionStudents = attentionStudents.slice(0, 8);
-  attentionClasses = attentionClasses.slice(0, 8);
 
   if (students.length === 0) {
     return (
@@ -145,21 +168,23 @@ const Dashboard = () => {
               <EmptyState title="All clear!" description="No students currently require immediate attention." />
             ) : (
               <div className="flex flex-col gap-3 px-6 pb-6 mt-2">
-                <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-[#1E2B59]/5 rounded-xl border border-border-subtle text-xs font-bold text-navy uppercase tracking-wider mb-2">
+                <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-[#1E2B59]/5 rounded-xl border border-border-subtle text-xs font-bold text-navy uppercase tracking-wider mb-2 shrink-0">
                   <div className="col-span-4">Student</div>
                   <div className="col-span-2">Class</div>
                   <div className="col-span-6">Reason</div>
                 </div>
-                {attentionStudents.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/50 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 transition-all">
-                    <div className="col-span-4 flex items-center gap-3">
-                      <Avatar name={item.name} size="sm" />
-                      <span className="font-bold text-navy">{item.name}</span>
+                <div className="flex flex-col gap-3 overflow-y-auto max-h-[320px] pr-2 pb-2 custom-scrollbar">
+                  {attentionStudents.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/50 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 transition-all">
+                      <div className="col-span-4 flex items-center gap-3">
+                        <Avatar name={item.name} size="sm" />
+                        <span className="font-bold text-navy">{item.name}</span>
+                      </div>
+                      <div className="col-span-2 font-medium text-navy">{item.class}</div>
+                      <div className="col-span-6 text-sm font-medium text-navy truncate" title={item.reason}>{item.reason}</div>
                     </div>
-                    <div className="col-span-2 font-medium text-navy">{item.class}</div>
-                    <div className="col-span-6 text-sm font-medium text-navy truncate">{item.reason}</div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </Card>
@@ -176,16 +201,18 @@ const Dashboard = () => {
               <EmptyState title="All clear!" description="No classes currently require immediate attention." />
             ) : (
               <div className="flex flex-col gap-3 px-6 pb-6 mt-2">
-                <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-[#1E2B59]/5 rounded-xl border border-border-subtle text-xs font-bold text-navy uppercase tracking-wider mb-2">
+                <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-[#1E2B59]/5 rounded-xl border border-border-subtle text-xs font-bold text-navy uppercase tracking-wider mb-2 shrink-0">
                   <div className="col-span-4">Class</div>
                   <div className="col-span-8">Reason</div>
                 </div>
-                {attentionClasses.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/50 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 transition-all">
-                    <div className="col-span-4 font-bold text-navy">{item.class}</div>
-                    <div className="col-span-8 text-sm font-medium text-navy truncate">{item.reason}</div>
-                  </div>
-                ))}
+                <div className="flex flex-col gap-3 overflow-y-auto max-h-[320px] pr-2 pb-2 custom-scrollbar">
+                  {attentionClasses.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-4 items-center p-4 bg-white/50 backdrop-blur-md rounded-2xl border border-white shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 transition-all">
+                      <div className="col-span-4 font-bold text-navy">{item.class}</div>
+                      <div className="col-span-8 text-sm font-medium text-navy truncate" title={item.reason}>{item.reason}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </Card>
@@ -213,14 +240,14 @@ const Dashboard = () => {
             <div className="flex flex-col gap-3 flex-1 overflow-y-auto mb-4 pr-2">
               {tasks.length === 0 && !isAddingTask && (
                 <div className="my-auto">
-                  <EmptyState title="No tasks" description="You have a clear schedule today." />
+                  <EmptyState title="No tasks" description="No tasks for today. Add your first task." />
                 </div>
               )}
               {tasks.map(task => (
                 <div 
                   key={task.id} 
-                  className={`group flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 ${
-                    task.completed ? 'border-[#1E2B59]/20 bg-[#1E2B59]/5' : 'bg-white border-white hover:border-[#1E2B59]/30'
+                  className={`group flex items-start gap-4 p-4 rounded-2xl transition-all cursor-pointer shadow-[0_4px_12px_rgba(31,38,135,0.03)] hover:shadow-[0_8px_20px_rgba(31,38,135,0.06)] hover:-translate-y-0.5 ${
+                    task.completed ? 'bg-[#1E2B59]/5' : 'bg-white'
                   }`}
                   onClick={() => toggleTask(task.id)}
                 >

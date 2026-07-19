@@ -53,6 +53,7 @@ const ClassDetails = () => {
 
   // Sorting State for Students Tab
   const [sortConfig, setSortConfig] = useState({ key: 'rollNo', direction: 'asc' });
+  const [statusFilter, setStatusFilter] = useState('All Students');
 
   const sortedStudents = useMemo(() => {
     const enrichedStudents = initialStudents.map(student => {
@@ -61,6 +62,10 @@ const ClassDetails = () => {
     });
 
     let sortableStudents = [...enrichedStudents];
+    if (statusFilter !== 'All Students') {
+      sortableStudents = sortableStudents.filter(s => s.status === statusFilter);
+    }
+    
     if (sortConfig !== null) {
       sortableStudents.sort((a, b) => {
         let aVal = a[sortConfig.key];
@@ -81,7 +86,7 @@ const ClassDetails = () => {
       });
     }
     return sortableStudents;
-  }, [initialStudents, sortConfig, classKey, getStudentMetrics]);
+  }, [initialStudents, sortConfig, statusFilter, classKey, getStudentMetrics]);
 
   const requestSort = (key) => {
     let direction = 'asc';
@@ -463,9 +468,23 @@ const ClassDetails = () => {
 
         {/* STUDENTS TAB */}
         {activeTab === 'students' && (
-          <Card noPadding>
-            <div className="overflow-x-auto w-full">
-              <table className="w-full text-left border-collapse min-w-[700px]">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center bg-paper-light p-3 rounded-xl border border-border-subtle">
+              <span className="font-semibold text-navy ml-2">Students Directory</span>
+              <select 
+                className="input-tactile py-1.5 w-auto text-sm focus:!border-border-subtle"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="All Students">All Students</option>
+                <option value="Needs Support">Needs Support</option>
+                <option value="Active">Active</option>
+                <option value="Excellent">Excellent</option>
+              </select>
+            </div>
+            <Card noPadding>
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="border-b border-border-subtle bg-paper/50">
                     <SortableHeader label="Roll No" sortKey="rollNo" />
@@ -473,6 +492,9 @@ const ClassDetails = () => {
                     <SortableHeader label="Attendance %" sortKey="attendance" />
                     <SortableHeader label="Avg Score" sortKey="marks" />
                     <SortableHeader label="Status" sortKey="status" />
+                    {statusFilter === 'Needs Support' && (
+                      <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-left">Reason</th>
+                    )}
                     <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-center w-24">View</th>
                   </tr>
                 </thead>
@@ -497,6 +519,11 @@ const ClassDetails = () => {
                           {student.status || 'Active'}
                         </Badge>
                       </td>
+                      {statusFilter === 'Needs Support' && (
+                        <td className="px-6 py-4 text-sm font-medium text-danger">
+                          {(student.attendance !== null && student.attendance < 75) && (student.marks !== null && student.marks < 50) ? 'Low Attendance + Low Marks' : (student.attendance !== null && student.attendance < 75) ? 'Low Attendance' : 'Low Marks'}
+                        </td>
+                      )}
                       <td className="px-6 py-4">
                         <div className="flex justify-center">
                           <Button variant="ghost" className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -508,8 +535,8 @@ const ClassDetails = () => {
                   ))}
                   {sortedStudents.length === 0 && (
                     <tr>
-                      <td colSpan="6" className="p-12 text-center text-text-secondary">
-                        No students found in this class.
+                      <td colSpan={statusFilter === 'Needs Support' ? 7 : 6} className="p-12 text-center text-text-secondary">
+                        No students found matching the selected filter.
                       </td>
                     </tr>
                   )}
@@ -517,6 +544,7 @@ const ClassDetails = () => {
               </table>
             </div>
           </Card>
+        </div>
         )}
 
         {/* TESTS TAB */}
