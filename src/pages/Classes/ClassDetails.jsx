@@ -32,9 +32,13 @@ const ClassDetails = () => {
   const [className, sectionName] = (id || '').split('-');
   const initialStudents = students.filter(s => s.class === className && s.section === sectionName);
   
+  const todayDate = new Date();
+  const localToday = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+  const [attendanceDate, setAttendanceDate] = useState(localToday);
+  
   const { getClassMetrics, getStudentMetrics } = useAnalytics();
   const classKey = `${className}-${sectionName}`;
-  const classMetrics = getClassMetrics(classKey);
+  const classMetrics = getClassMetrics(classKey, attendanceDate);
 
   const classDetails = {
     id,
@@ -225,6 +229,25 @@ const ClassDetails = () => {
   };
 
   const saveMarks = () => {
+    let hasError = false;
+    for (let tm of testMarks) {
+      if (tm.marks === '') {
+         hasError = true;
+         break;
+      }
+      const m = Number(tm.marks);
+      if (isNaN(m) || m < 0 || m > testForm.maxMarks) {
+         hasError = true;
+         break;
+      }
+    }
+
+    if (hasError) {
+      setTestError(`Please fix invalid marks before saving. All marks must be between 0 and ${testForm.maxMarks}.`);
+      return;
+    }
+
+    setTestError('');
     setIsTestLoading(true);
     setTimeout(() => {
       const marksArr = testMarks.map(t => Number(t.marks) || 0);
@@ -233,19 +256,19 @@ const ClassDetails = () => {
       const min = marksArr.length > 0 ? Math.min(...marksArr) : 0;
       const below40 = testMarks.filter(t => (Number(t.marks || 0) / testForm.maxMarks) * 100 < 40).length;
 
-      saveTest(classKey, testForm.name, { ...testForm, marks: testMarks });
+      const testKey = `${testForm.name} - ${testForm.subject}`;
+      saveTest(classKey, testKey, { ...testForm, marks: testMarks });
 
       setTestInsights({ avg, max, min, below40 });
       setIsTestLoading(false);
+      setSelectedTestName(testKey);
       setTestState('saved');
     }, 1000);
   };
 
   // --- ATTENDANCE MANAGEMENT STATE ---
-  const { getAttendance, saveAttendance: persistAttendance } = useAttendanceStore();
-  const todayDate = new Date();
-  const localToday = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
-  const [attendanceDate, setAttendanceDate] = useState(localToday);
+  const { records: allAttendanceRecords, getAttendance, saveAttendance: persistAttendance } = useAttendanceStore();
+  const classAttendanceRecords = allAttendanceRecords[classKey] || {};
   const [attendanceData, setAttendanceData] = useState({});
   const [attendanceStatus, setAttendanceStatus] = useState('new'); // 'new', 'viewing', 'editing'
   const [originalAttendanceData, setOriginalAttendanceData] = useState(null);
@@ -294,13 +317,23 @@ const ClassDetails = () => {
     setAttendanceStatus('viewing');
   };
 
-  const mockWeeklyAttendance = [
-    { day: 'Mon', present: 95 },
-    { day: 'Tue', present: 92 },
-    { day: 'Wed', present: 88 },
-    { day: 'Thu', present: 94 },
-    { day: 'Fri', present: 89 },
-  ];
+  const weeklyAttendanceTrend = useMemo(() => {
+    const dates = Object.keys(classAttendanceRecords).sort((a,b) => new Date(a) - new Date(b));
+    const last5 = dates.slice(-5);
+    if (last5.length === 0) return [];
+
+    return last5.map(dateStr => {
+      const dayData = classAttendanceRecords[dateStr];
+      const statuses = Object.values(dayData);
+      const presentCount = statuses.filter(s => s === 'present').length;
+      const percent = statuses.length > 0 ? Math.round((presentCount / statuses.length) * 100) : 0;
+      
+      const d = new Date(dateStr);
+      const formattedDate = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      
+      return { day: formattedDate, present: percent };
+    });
+  }, [classAttendanceRecords]);
 
   const studentsNeedingAttendanceSupport = classMetrics.lowAttendanceStudents || [];
 
@@ -351,7 +384,7 @@ const ClassDetails = () => {
             <ArrowLeft size={20} className="text-navy" />
           </button>
           <div className="mb-4">
-            <h1 className="text-4xl font-serif text-navy mb-3">Class {classDetails.name} Details</h1>
+            <h1 className="text-4xl font-serif text-navy mb-3">Class {classDetails.name}-{classDetails.section} Details</h1>
             <p className="text-text-secondary text-lg">Comprehensive overview of class performance and roster.</p>
           </div>
         </div>
@@ -440,7 +473,7 @@ const ClassDetails = () => {
                     <SortableHeader label="Attendance %" sortKey="attendance" />
                     <SortableHeader label="Avg Score" sortKey="marks" />
                     <SortableHeader label="Status" sortKey="status" />
-                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-right">View</th>
+                    <th className="px-6 py-4 font-semibold text-text-secondary text-sm text-center w-24">View</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -464,10 +497,12 @@ const ClassDetails = () => {
                           {student.status || 'Active'}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <Button variant="ghost" className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <ChevronRight size={20} />
-                        </Button>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center">
+                          <Button variant="ghost" className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ChevronRight size={20} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -488,17 +523,21 @@ const ClassDetails = () => {
         {activeTab === 'tests' && (
           <div className="flex flex-col gap-6">
             
+            <Card>
+              <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <h3 className="text-xl font-bold text-navy">Manage Tests</h3>
+                <select className="input-tactile py-2 focus:!border-border-subtle" value={selectedTestName} onChange={handleTestSelection}>
+                  <option value="new">+ Create New Test</option>
+                  {Object.keys(allTests).map(key => {
+                    const test = allTests[key];
+                    return <option key={key} value={key}>{test.name} - {test.subject}</option>;
+                  })}
+                </select>
+              </div>
+            </Card>
+
             {testState === 'setup' && (
               <Card>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-navy">Create or Load Test</h3>
-                  <select className="input-tactile py-2" value={selectedTestName} onChange={handleTestSelection}>
-                    <option value="new">+ Create New Test</option>
-                    {Object.keys(allTests).map(name => (
-                      <option key={name} value={name}>{name} (Saved)</option>
-                    ))}
-                  </select>
-                </div>
                 {testError && <div className="mb-4 p-3 bg-danger-light text-danger rounded-xl text-sm">{testError}</div>}
                 
                 <form onSubmit={handleTestSetupSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
@@ -636,17 +675,26 @@ const ClassDetails = () => {
                             <td className="px-6 py-3 font-medium text-navy">{tm.name}</td>
                             <td className="px-6 py-3 text-right">
                               {testState === 'preview' ? (
-                                <input 
-                                  type="number" 
-                                  className="input-tactile py-2 px-3 text-right max-w-[120px] ml-auto block" 
-                                  value={tm.marks}
-                                  disabled={isTestLoading}
-                                  onChange={(e) => {
-                                    const newMarks = [...testMarks];
-                                    newMarks[idx].marks = e.target.value;
-                                    setTestMarks(newMarks);
-                                  }}
-                                />
+                                <>
+                                  <input 
+                                    type="number" 
+                                    className={`input-tactile py-2 px-3 text-right max-w-[120px] ml-auto block ${
+                                      (tm.marks !== '' && (isNaN(Number(tm.marks)) || Number(tm.marks) < 0 || Number(tm.marks) > testForm.maxMarks)) ? '!border-danger focus:!border-danger focus:!ring-danger/20' : ''
+                                    }`}
+                                    value={tm.marks}
+                                    disabled={isTestLoading}
+                                    onChange={(e) => {
+                                      const newMarks = [...testMarks];
+                                      newMarks[idx].marks = e.target.value;
+                                      setTestMarks(newMarks);
+                                    }}
+                                  />
+                                  {tm.marks !== '' && (isNaN(Number(tm.marks)) || Number(tm.marks) < 0 || Number(tm.marks) > testForm.maxMarks) && (
+                                    <span className="text-[11px] text-danger mt-1 block max-w-[120px] ml-auto text-right leading-tight font-medium">
+                                      Invalid: 0 to {testForm.maxMarks}
+                                    </span>
+                                  )}
+                                </>
                               ) : (
                                 <span className="font-bold text-navy pr-4">{tm.marks}</span>
                               )}
@@ -676,7 +724,7 @@ const ClassDetails = () => {
               </Card>
               <Card className="flex flex-col justify-center">
                 <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Avg Attendance</p>
-                <p className="text-2xl font-bold text-navy">{classDetails.avgAttendance}%</p>
+                <p className="text-2xl font-bold text-navy">{classMetrics.dailyAvgAttendance ?? classMetrics.avgAttendance}%</p>
               </Card>
               <Card className="flex flex-col justify-center border-danger-light">
                 <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Below 75%</p>
@@ -799,10 +847,10 @@ const ClassDetails = () => {
 
               {/* Right Column: Insights & History */}
               <div className="flex flex-col gap-6 w-full">
-                <Card className="flex flex-col h-64">
+                <Card className="flex flex-col">
                   <ChartContainer title="Weekly Attendance Trend">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockWeeklyAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={weeklyAttendanceTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(27, 37, 65, 0.08)" />
                         <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} dy={10} />
                         <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#8A8B9E', fontSize: 12 }} />

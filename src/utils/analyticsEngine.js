@@ -1,6 +1,6 @@
 // 1. Student Status
 export const calculateStudentStatus = (attendance, avgMarks) => {
-  if ((attendance !== null && attendance < 75) || (avgMarks !== null && avgMarks < 40)) {
+  if ((attendance !== null && attendance < 75) || (avgMarks !== null && avgMarks < 50)) {
     return 'Needs Support';
   }
   if (avgMarks !== null && avgMarks >= 80) {
@@ -56,18 +56,20 @@ export const calculateClassAverage = (classSection, performanceTests) => {
 };
 
 // 3. Overall class attendance percentage
-export const calculateClassAttendance = (classSection, attendanceRecords) => {
+export const calculateClassAttendance = (classSection, attendanceRecords, targetDate = null) => {
   const classDates = attendanceRecords[classSection];
   if (!classDates) return 0;
   
   let totalRecords = 0;
   let presentRecords = 0;
   
-  Object.values(classDates).forEach(dateRecord => {
-    Object.values(dateRecord).forEach(status => {
-      totalRecords++;
-      if (status === 'present') presentRecords++;
-    });
+  Object.entries(classDates).forEach(([dateStr, dateRecord]) => {
+    if (!targetDate || dateStr === targetDate) {
+      Object.values(dateRecord).forEach(status => {
+        totalRecords++;
+        if (status === 'present') presentRecords++;
+      });
+    }
   });
   
   if (totalRecords === 0) return 0;
@@ -158,8 +160,8 @@ export const getLowAttendanceStudents = (classSection, attendanceRecords, classS
     .sort((a, b) => a.attendance - b.attendance);
 };
 
-// 8. Students with low academic performance (< 40%)
-export const getLowPerformanceStudents = (classSection, performanceTests, classStudents, threshold = 40) => {
+// 8. Students with low academic performance (< 50%)
+export const getLowPerformanceStudents = (classSection, performanceTests, classStudents, threshold = 50) => {
   const studentPerformance = classStudents.map(student => ({
     ...student,
     avgScore: calculateStudentAverage(student.studentId, classSection, performanceTests, classStudents)

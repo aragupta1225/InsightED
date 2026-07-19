@@ -20,13 +20,14 @@ const useAnalytics = () => {
     };
   }, [attendanceRecords, performanceTests, students]);
 
-  const getClassMetrics = useCallback((classSection) => {
+  const getClassMetrics = useCallback((classSection, targetDate = null) => {
     const classStudents = students.filter(
       s => `${s.class}-${s.section}` === classSection
     );
 
     return {
       avgAttendance: Engine.calculateClassAttendance(classSection, attendanceRecords),
+      dailyAvgAttendance: targetDate ? Engine.calculateClassAttendance(classSection, attendanceRecords, targetDate) : null,
       avgMarks: Engine.calculateClassAverage(classSection, performanceTests),
       subjectAverages: Engine.calculateSubjectAverages(classSection, performanceTests),
       topPerformers: Engine.getTopPerformers(classSection, performanceTests, classStudents),
@@ -141,7 +142,7 @@ const useAnalytics = () => {
     return {
       classAverages,
       subjectPerformance,
-      academicSupportStudents: allLowPerformance.slice(0, 10)
+      academicSupportStudents: allLowPerformance
     };
   }, [students, performanceTests]);
 
