@@ -66,8 +66,16 @@ const useAnalytics = () => {
         totalClassesWithTest++;
       }
 
-      // If a class average is particularly low, flag it
-      if (classMarks > 0 && classMarks < 60) {
+      const classAttendance = Engine.calculateClassAttendance(classSection, attendanceRecords);
+      const classStudents = students.filter(s => `${s.class}-${s.section}` === classSection);
+      const studentsNeedingAttention = Engine.getStudentsNeedingAttention(classSection, attendanceRecords, performanceTests, classStudents);
+
+      let needsAttention = false;
+      if (classMarks > 0 && classMarks < 60) needsAttention = true;
+      if (classAttendance > 0 && classAttendance < 75) needsAttention = true;
+      if (studentsNeedingAttention && studentsNeedingAttention.length >= 1) needsAttention = true;
+
+      if (needsAttention) {
         totalClassesNeedingAttention++;
       }
     });
