@@ -633,7 +633,10 @@ const ClassDetails = () => {
                 {testState === 'saved' && testInsights && (
                   <Card className="bg-success-light/30 border-success/20">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
-                      <h3 className="text-lg font-bold text-navy">{testForm.name} - {testForm.subject} Insights</h3>
+                      <h3 className="text-lg font-bold text-navy">
+                        {testForm.name} - {testForm.subject} Insights 
+                        {testForm.date && <span className="ml-2 text-sm font-medium text-text-secondary">({testForm.date.split('-').reverse().join('/')})</span>}
+                      </h3>
                       <div className="flex flex-wrap items-center gap-3">
                         <Button variant="outline" className="px-4 py-2 text-sm flex items-center justify-center gap-2" onClick={() => setTestState('preview')}>
                           <Edit size={16} /> Edit Marks

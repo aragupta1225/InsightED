@@ -222,7 +222,7 @@ export const aggregateGlobalAttendance = (attendanceRecords, students, targetDat
   
   const studentInfoMap = {};
   students.forEach(s => {
-    studentInfoMap[s.studentId || s.id] = s;
+    studentInfoMap[String(s.studentId || s.id)] = s;
   });
 
   // Fix data retrieval for 8-B only
@@ -245,6 +245,9 @@ export const aggregateGlobalAttendance = (attendanceRecords, students, targetDat
       if (!dateSums[date]) dateSums[date] = { total: 0, present: 0 };
       
       Object.entries(records).forEach(([studentId, status]) => {
+        const sInfo = studentInfoMap[String(studentId)];
+        if (!sInfo) return; // Skip stale records for non-existent students
+
         // Date aggregation (for weekly trends) - ALL DATES
         dateSums[date].total++;
         if (status === 'present') {
@@ -253,12 +256,11 @@ export const aggregateGlobalAttendance = (attendanceRecords, students, targetDat
         
         // Student aggregation (for chronic absentees) - ALL DATES
         if (!studentStats[studentId]) {
-          const sInfo = studentInfoMap[studentId];
           studentStats[studentId] = { 
             total: 0, 
             present: 0, 
-            name: sInfo ? sInfo.name : 'Unknown Student',
-            class: classSection
+            name: sInfo.name,
+            class: `${sInfo.class}-${sInfo.section}`
           };
         }
         studentStats[studentId].total++;
@@ -346,3 +348,5 @@ export const aggregateGlobalAttendance = (attendanceRecords, students, targetDat
     bestAttendanceClass
   };
 };
+
+

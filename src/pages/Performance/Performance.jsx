@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Target, Trophy, AlertCircle, TrendingUp } from 'lucide-react';
+import { Target, Trophy, AlertCircle } from 'lucide-react';
 import Card from '../../components/common/Card';
 import StatCard from '../../components/common/StatCard';
 import ChartContainer from '../../components/common/ChartContainer';
@@ -23,11 +23,10 @@ const Performance = () => {
       </div>
 
       {/* Top Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
         <StatCard title="School Average Score" value={`${globalMetrics.schoolAvgMarks}%`} icon={Target} color="pink" />
         <StatCard title="Top Performing Class" value={bestClass} icon={Trophy} color="blue" />
         <StatCard title="Classes Needing Attention" value={globalMetrics.classesNeedingAttention} icon={AlertCircle} color="pink" />
-        <StatCard title="Improvement (Last Exam)" value="N/A" icon={TrendingUp} color="blue" />
       </div>
 
       {sortedClasses.length === 0 ? (
