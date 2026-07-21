@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { read, utils } from 'xlsx';
 import useStudentStore from '../../store/studentStore';
+import useAttendanceStore from '../../store/attendanceStore';
+import usePerformanceStore from '../../store/performanceStore';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -305,7 +307,21 @@ const ImportData = () => {
 
       {status === 'success' && (
         <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full">
-          <Card className="p-16 flex flex-col items-center justify-center text-center border border-border-subtle shadow-sm bg-white min-h-[400px]">
+          <Card className="p-16 flex flex-col items-center justify-center text-center border border-border-subtle shadow-sm bg-white min-h-[400px] relative">
+            <button 
+              className="absolute top-4 right-4 text-text-muted hover:text-text-secondary"
+              onClick={() => {
+                useStudentStore.setState({ students: [] });
+                useAttendanceStore.setState({ records: {} });
+                usePerformanceStore.setState({ tests: {} });
+                setSelectedFile(null);
+                setStatus('default');
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+              title="Remove Imported Data"
+            >
+              <X size={20} />
+            </button>
             <div className="w-20 h-20 bg-success-light/30 rounded-full flex items-center justify-center mb-6">
               <CheckCircle2 size={40} className="text-success" />
             </div>
